@@ -1,0 +1,64 @@
+{
+  "abilities": [
+    {
+	  "id": "shield_bash",
+	  "name": "Shield Bash",
+	  "role": "Tank",
+	  "rangeType": "close",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "single",
+	  "spOnHit": 1,
+	  "tags": ["knockback"]
+	},
+	{
+	  "id": "iron_guard",
+	  "name": "Iron Guard",
+	  "role": "Tank",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "self",
+	  "buff": { "stat": "defense", "amount": 2, "duration": 1 }
+	},
+	{
+	  "id": "ground_slam",
+	  "name": "Ground Slam",
+	  "role": "Tank",
+	  "rangeType": "close",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "aoe_all_enemies",
+	  "spOnHit": 1,
+	  "tags": ["knockback"],
+	  "description": "Slam the ground, damaging and disrupting all enemies adjacent to your lane."
+	},
+	{
+	  "id": "wild_flurry",
+	  "name": "Wild Flurry",
+	  "role": "DPS",
+	  "rangeType": "projectile",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "aoe_2",
+	  "spOnHit": 1,
+	  "description": "Spray attacks hitting two enemies."
+	},
+	{
+	  "id": "flash_pulse",
+	  "name": "Flash Pulse",
+	  "role": "Support",
+	  "rangeType": "projectile",
+	  "rollType": "speed_vs_speed",
+	  "targetType": "aoe_all_enemies",
+	  "debuff": { "stat": "attack", "amount": -1, "duration": 1 },
+	  "description": "Blind all enemies, lowering their next attack roll."
+	},
+	{
+	  "id": "motivation_wave",
+	  "name": "Motivation Wave",
+	  "role": "Support",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "aoe_self_allies",
+	  "buff": { "stat": "speed", "amount": 1, "duration": 1 },
+	  "description": "Inspire allies, increasing speed."
+	}
+  ]
+}

@@ -1,0 +1,420 @@
+{
+  "teams": [
+  {
+    "id": "cyb_barrio_phantoms",
+    "name": "Barrio Phantoms",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "bp_tank1", "name": "Diego",    "race": "Canine",   "role": "Tank" },
+      { "id": "bp_tank2", "name": "Marina",   "race": "Feline",   "role": "Tank" },
+      { "id": "bp_dps1",  "name": "Rafa",     "race": "Hyena",    "role": "DPS" },
+      { "id": "bp_dps2",  "name": "Camila",   "race": "Mustelid", "role": "DPS" },
+      { "id": "bp_sup1",  "name": "Tiago",    "race": "Canine",   "role": "Support" },
+      { "id": "bp_sup2",  "name": "Luz",      "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_favela_flux",
+    "name": "Favela Flux",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "ff_tank1", "name": "João",     "race": "Canine",   "role": "Tank" },
+      { "id": "ff_tank2", "name": "Ximena",   "race": "Mustelid", "role": "Tank" },
+      { "id": "ff_dps1",  "name": "Bruno",    "race": "Hyena",    "role": "DPS" },
+      { "id": "ff_dps2",  "name": "Sofía",    "race": "Feline",   "role": "DPS" },
+      { "id": "ff_sup1",  "name": "Andrés",   "race": "Canine",   "role": "Support" },
+      { "id": "ff_sup2",  "name": "Carla",    "race": "Mustelid", "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_noite_crimson",
+    "name": "Noite Crimson",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "nc_tank1", "name": "Rogério",  "race": "Ursine",   "role": "Tank" },
+      { "id": "nc_tank2", "name": "Letícia",  "race": "Canine",   "role": "Tank" },
+      { "id": "nc_dps1",  "name": "Santiago", "race": "Feline",   "role": "DPS" },
+      { "id": "nc_dps2",  "name": "Yara",     "race": "Hyena",    "role": "DPS" },
+      { "id": "nc_sup1",  "name": "Pablo",    "race": "Mustelid", "role": "Support" },
+      { "id": "nc_sup2",  "name": "Inés",     "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_luz_de_neon",
+    "name": "Luz de Neon",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "ln_tank1", "name": "Gustavo",  "race": "Canine",   "role": "Tank" },
+      { "id": "ln_tank2", "name": "Paloma",   "race": "Feline",   "role": "Tank" },
+      { "id": "ln_dps1",  "name": "Nico",     "race": "Mustelid", "role": "DPS" },
+      { "id": "ln_dps2",  "name": "Lucía",    "race": "Hyena",    "role": "DPS" },
+      { "id": "ln_sup1",  "name": "Rosa",     "race": "Canine",   "role": "Support" },
+      { "id": "ln_sup2",  "name": "Miguel",   "race": "Ursine",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_callejeros_sync",
+    "name": "Callejeros Sync",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "cs_tank1", "name": "Carlos",   "race": "Canine",   "role": "Tank" },
+      { "id": "cs_tank2", "name": "Helena",   "race": "Mustelid", "role": "Tank" },
+      { "id": "cs_dps1",  "name": "Dieguito", "race": "Hyena",    "role": "DPS" },
+      { "id": "cs_dps2",  "name": "Valéria",  "race": "Feline",   "role": "DPS" },
+      { "id": "cs_sup1",  "name": "Paulo",    "race": "Canine",   "role": "Support" },
+      { "id": "cs_sup2",  "name": "Lina",     "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_sombras_digitales",
+    "name": "Sombras Digitales",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "sd_tank1", "name": "Enrique",  "race": "Ursine",   "role": "Tank" },
+      { "id": "sd_tank2", "name": "Pilar",    "race": "Canine",   "role": "Tank" },
+      { "id": "sd_dps1",  "name": "Luís",     "race": "Hyena",    "role": "DPS" },
+      { "id": "sd_dps2",  "name": "Raquel",   "race": "Mustelid", "role": "DPS" },
+      { "id": "sd_sup1",  "name": "Tomás",    "race": "Feline",   "role": "Support" },
+      { "id": "sd_sup2",  "name": "Isabela",  "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_fluxo_praiano",
+    "name": "Fluxo Praiano",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "fc_tank1", "name": "Brunão",   "race": "Canine",   "role": "Tank" },
+      { "id": "fc_tank2", "name": "Renata",   "race": "Mustelid", "role": "Tank" },
+      { "id": "fc_dps1",  "name": "Caio",     "race": "Feline",   "role": "DPS" },
+      { "id": "fc_dps2",  "name": "Julieta",  "race": "Hyena",    "role": "DPS" },
+      { "id": "fc_sup1",  "name": "Felipe",   "race": "Canine",   "role": "Support" },
+      { "id": "fc_sup2",  "name": "María",    "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cyb_linha_de_sombra",
+    "name": "Linha de Sombra",
+    "region": "CyberpunkUnderground",
+    "fighters": [
+      { "id": "ls_tank1", "name": "Rafael",   "race": "Canine",   "role": "Tank" },
+      { "id": "ls_tank2", "name": "Camila",   "race": "Mustelid", "role": "Tank" },
+      { "id": "ls_dps1",  "name": "Jorge",    "race": "Hyena",    "role": "DPS" },
+      { "id": "ls_dps2",  "name": "Elena",    "race": "Feline",   "role": "DPS" },
+      { "id": "ls_sup1",  "name": "Lourdes",  "race": "Ursine",   "role": "Support" },
+      { "id": "ls_sup2",  "name": "Sérgio",   "race": "Canine",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_luminous_canopy",
+    "name": "Luminous Canopy",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "lc_tank1", "name": "Alessio", "race": "Ursine",    "role": "Tank" },
+      { "id": "lc_tank2", "name": "Chiara",  "race": "Canine",    "role": "Tank" },
+      { "id": "lc_dps1",  "name": "Hana",    "race": "Mustelid",  "role": "DPS" },
+      { "id": "lc_dps2",  "name": "Ren",     "race": "Canine",    "role": "DPS" },
+      { "id": "lc_sup1",  "name": "Léa",     "race": "Mustelid",  "role": "Support" },
+      { "id": "lc_sup2",  "name": "Émile",   "race": "Ursine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_verdant_aurora",
+    "name": "Verdant Aurora",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "va_tank1", "name": "Marco",   "race": "Canine",    "role": "Tank" },
+      { "id": "va_tank2", "name": "Sakura",  "race": "Mustelid",  "role": "Tank" },
+      { "id": "va_dps1",  "name": "Yuki",    "race": "Canine",    "role": "DPS" },
+      { "id": "va_dps2",  "name": "Kenji",   "race": "Ursine",    "role": "DPS" },
+      { "id": "va_sup1",  "name": "Camille", "race": "Mustelid",  "role": "Support" },
+      { "id": "va_sup2",  "name": "Luc",     "race": "Canine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_sylvan_resonance",
+    "name": "Sylvan Resonance",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "sr_tank1", "name": "Takumi",  "race": "Canine",    "role": "Tank" },
+      { "id": "sr_tank2", "name": "Giulia",  "race": "Ursine",    "role": "Tank" },
+      { "id": "sr_dps1",  "name": "Minseo",  "race": "Mustelid",  "role": "DPS" },
+      { "id": "sr_dps2",  "name": "Liyun",   "race": "Canine",    "role": "DPS" },
+      { "id": "sr_sup1",  "name": "Noémie",  "race": "Mustelid",  "role": "Support" },
+      { "id": "sr_sup2",  "name": "Hiro",    "race": "Canine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_foret_lumineuse",
+    "name": "Forêt Lumineuse",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "fl_tank1", "name": "Élodie",  "race": "Ursine",    "role": "Tank" },
+      { "id": "fl_tank2", "name": "Matteo",  "race": "Canine",    "role": "Tank" },
+      { "id": "fl_dps1",  "name": "Ayame",   "race": "Mustelid",  "role": "DPS" },
+      { "id": "fl_dps2",  "name": "Jisoo",   "race": "Canine",    "role": "DPS" },
+      { "id": "fl_sup1",  "name": "Pierre",  "race": "Ursine",    "role": "Support" },
+      { "id": "fl_sup2",  "name": "Rina",    "race": "Mustelid",  "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_canopy_concord",
+    "name": "Canopy Concord",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "cc_tank1", "name": "Lorenzo", "race": "Canine",    "role": "Tank" },
+      { "id": "cc_tank2", "name": "Akari",   "race": "Mustelid",  "role": "Tank" },
+      { "id": "cc_dps1",  "name": "Seojun",  "race": "Canine",    "role": "DPS" },
+      { "id": "cc_dps2",  "name": "Wei",     "race": "Ursine",    "role": "DPS" },
+      { "id": "cc_sup1",  "name": "Chloé",   "race": "Mustelid",  "role": "Support" },
+      { "id": "cc_sup2",  "name": "Nadia",   "race": "Canine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_arboreal_sunrise",
+    "name": "Arboreal Sunrise",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "as_tank1", "name": "Gianni",  "race": "Ursine",    "role": "Tank" },
+      { "id": "as_tank2", "name": "Miyu",    "race": "Mustelid",  "role": "Tank" },
+      { "id": "as_dps1",  "name": "Taeyang", "race": "Canine",    "role": "DPS" },
+      { "id": "as_dps2",  "name": "Bao",     "race": "Canine",    "role": "DPS" },
+      { "id": "as_sup1",  "name": "Claire",  "race": "Mustelid",  "role": "Support" },
+      { "id": "as_sup2",  "name": "Enzo",    "race": "Canine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_riviera_verdure",
+    "name": "Riviera Verdure",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "rv_tank1", "name": "Luciano", "race": "Canine",    "role": "Tank" },
+      { "id": "rv_tank2", "name": "Haruka",  "race": "Mustelid",  "role": "Tank" },
+      { "id": "rv_dps1",  "name": "Yuna",    "race": "Canine",    "role": "DPS" },
+      { "id": "rv_dps2",  "name": "Minji",   "race": "Ursine",    "role": "DPS" },
+      { "id": "rv_sup1",  "name": "Antoine", "race": "Mustelid",  "role": "Support" },
+      { "id": "rv_sup2",  "name": "Sofia",   "race": "Canine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "sol_polis_fiorita",
+    "name": "Polis Fiorita",
+    "region": "SolarpunkForest",
+    "fighters": [
+      { "id": "pf_tank1", "name": "Fabio",   "race": "Canine",    "role": "Tank" },
+      { "id": "pf_tank2", "name": "Kaori",   "race": "Mustelid",  "role": "Tank" },
+      { "id": "pf_dps1",  "name": "Daichi",  "race": "Canine",    "role": "DPS" },
+      { "id": "pf_dps2",  "name": "Hyejin",  "race": "Ursine",    "role": "DPS" },
+      { "id": "pf_sup1",  "name": "Étienne", "race": "Mustelid",  "role": "Support" },
+      { "id": "pf_sup2",  "name": "Mélanie", "race": "Canine",    "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_iron_tundra_brigade",
+    "name": "Iron Tundra Brigade",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "itb_tank1", "name": "Mikhail", "race": "Ursine",  "role": "Tank" },
+      { "id": "itb_tank2", "name": "Erika",   "race": "Canine",  "role": "Tank" },
+      { "id": "itb_dps1",  "name": "Simo",    "race": "Feline",  "role": "DPS" },
+      { "id": "itb_dps2",  "name": "Anya",    "race": "Canine",  "role": "DPS" },
+      { "id": "itb_sup1",  "name": "Kalevi",  "race": "Ursine",  "role": "Support" },
+      { "id": "itb_sup2",  "name": "Nina",    "race": "Feline",  "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_frostline_consortium",
+    "name": "Frostline Consortium",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "fcold_tank1", "name": "Viktor", "race": "Canine",  "role": "Tank" },
+      { "id": "fcold_tank2", "name": "Helga",  "race": "Ursine",  "role": "Tank" },
+      { "id": "fcold_dps1",  "name": "Oleg",   "race": "Feline",  "role": "DPS" },
+      { "id": "fcold_dps2",  "name": "Katja",  "race": "Canine",  "role": "DPS" },
+      { "id": "fcold_sup1",  "name": "Jari",   "race": "Ursine",  "role": "Support" },
+      { "id": "fcold_sup2",  "name": "Irina",  "race": "Feline",  "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_steel_glacier",
+    "name": "Steel Glacier",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "sg_tank1", "name": "Anders", "race": "Canine",   "role": "Tank" },
+      { "id": "sg_tank2", "name": "Marta",  "race": "Feline",   "role": "Tank" },
+      { "id": "sg_dps1",  "name": "Sergei", "race": "Ursine",   "role": "DPS" },
+      { "id": "sg_dps2",  "name": "Lena",   "race": "Canine",   "role": "DPS" },
+      { "id": "sg_sup1",  "name": "Petra",  "race": "Feline",   "role": "Support" },
+      { "id": "sg_sup2",  "name": "Ilkka",  "race": "Ursine",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_nordic_pistons",
+    "name": "Nordic Pistons",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "np_tank1", "name": "Ragnar", "race": "Ursine",   "role": "Tank" },
+      { "id": "np_tank2", "name": "Greta",  "race": "Canine",   "role": "Tank" },
+      { "id": "np_dps1",  "name": "Mikko",  "race": "Feline",   "role": "DPS" },
+      { "id": "np_dps2",  "name": "Anni",   "race": "Canine",   "role": "DPS" },
+      { "id": "np_sup1",  "name": "Olaf",   "race": "Ursine",   "role": "Support" },
+      { "id": "np_sup2",  "name": "Sasha",  "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_brass_ice_convoy",
+    "name": "Brass Ice Convoy",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "bic_tank1", "name": "Nikolai", "race": "Canine",  "role": "Tank" },
+      { "id": "bic_tank2", "name": "Tatiana", "race": "Feline",  "role": "Tank" },
+      { "id": "bic_dps1",  "name": "Yuri",    "race": "Ursine",  "role": "DPS" },
+      { "id": "bic_dps2",  "name": "Hanna",   "race": "Canine",  "role": "DPS" },
+      { "id": "bic_sup1",  "name": "Kaisa",   "race": "Feline",  "role": "Support" },
+      { "id": "bic_sup2",  "name": "Dmitri",  "race": "Ursine",  "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_arctic_drive_union",
+    "name": "Arctic Drive Union",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "adu_tank1", "name": "Johan",  "race": "Canine",   "role": "Tank" },
+      { "id": "adu_tank2", "name": "Svetlana","race": "Feline",  "role": "Tank" },
+      { "id": "adu_dps1",  "name": "Kirill", "race": "Ursine",   "role": "DPS" },
+      { "id": "adu_dps2",  "name": "Maija",  "race": "Canine",   "role": "DPS" },
+      { "id": "adu_sup1",  "name": "Erik",   "race": "Ursine",   "role": "Support" },
+      { "id": "adu_sup2",  "name": "Sonja",  "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_rime_gear_legion",
+    "name": "Rime Gear Legion",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "rgl_tank1", "name": "Lukas",  "race": "Canine",   "role": "Tank" },
+      { "id": "rgl_tank2", "name": "Helmi",  "race": "Feline",   "role": "Tank" },
+      { "id": "rgl_dps1",  "name": "Anton",  "race": "Ursine",   "role": "DPS" },
+      { "id": "rgl_dps2",  "name": "Ingrid", "race": "Canine",   "role": "DPS" },
+      { "id": "rgl_sup1",  "name": "Ville",  "race": "Ursine",   "role": "Support" },
+      { "id": "rgl_sup2",  "name": "Mila",   "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "cold_boreal_engineers",
+    "name": "Boreal Engineers",
+    "region": "DieselpunkCold",
+    "fighters": [
+      { "id": "be_tank1", "name": "Henrik",  "race": "Canine",   "role": "Tank" },
+      { "id": "be_tank2", "name": "Sanna",   "race": "Feline",   "role": "Tank" },
+      { "id": "be_dps1",  "name": "Marek",   "race": "Ursine",   "role": "DPS" },
+      { "id": "be_dps2",  "name": "Alina",   "race": "Canine",   "role": "DPS" },
+      { "id": "be_sup1",  "name": "Kari",    "race": "Ursine",   "role": "Support" },
+      { "id": "be_sup2",  "name": "Greta",   "race": "Feline",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_copper_dunes_pride",
+    "name": "Copper Dunes Pride",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "cdp_tank1", "name": "Kofi",    "race": "Feline",  "role": "Tank" },
+      { "id": "cdp_tank2", "name": "Amina",   "race": "Canine",  "role": "Tank" },
+      { "id": "cdp_dps1",  "name": "Jabari",  "race": "Hyena",   "role": "DPS" },
+      { "id": "cdp_dps2",  "name": "Naledi",  "race": "Feline",  "role": "DPS" },
+      { "id": "cdp_sup1",  "name": "Amara",   "race": "Canine",  "role": "Support" },
+      { "id": "cdp_sup2",  "name": "Kwesi",   "race": "Hyena",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_brass_oasis_nomads",
+    "name": "Brass Oasis Nomads",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "bon_tank1", "name": "Zuberi", "race": "Canine",  "role": "Tank" },
+      { "id": "bon_tank2", "name": "Halima", "race": "Feline",  "role": "Tank" },
+      { "id": "bon_dps1",  "name": "Chike",  "race": "Hyena",   "role": "DPS" },
+      { "id": "bon_dps2",  "name": "Imani",  "race": "Canine",  "role": "DPS" },
+      { "id": "bon_sup1",  "name": "Lwazi",  "race": "Feline",  "role": "Support" },
+      { "id": "bon_sup2",  "name": "Safiya", "race": "Hyena",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_sandclock_caravan",
+    "name": "Sandclock Caravan",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "scv_tank1", "name": "Bahati", "race": "Canine",  "role": "Tank" },
+      { "id": "scv_tank2", "name": "Thandi", "race": "Feline",  "role": "Tank" },
+      { "id": "scv_dps1",  "name": "Makena", "race": "Hyena",   "role": "DPS" },
+      { "id": "scv_dps2",  "name": "Juma",   "race": "Canine",  "role": "DPS" },
+      { "id": "scv_sup1",  "name": "Zuri",   "race": "Feline",  "role": "Support" },
+      { "id": "scv_sup2",  "name": "Kito",   "race": "Hyena",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_sunspire_guild",
+    "name": "Sunspire Guild",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "ssg_tank1", "name": "Ayodele", "race": "Feline", "role": "Tank" },
+      { "id": "ssg_tank2", "name": "Nuru",    "race": "Canine", "role": "Tank" },
+      { "id": "ssg_dps1",  "name": "Chuma",   "race": "Hyena",  "role": "DPS" },
+      { "id": "ssg_dps2",  "name": "Lulu",    "race": "Feline", "role": "DPS" },
+      { "id": "ssg_sup1",  "name": "Amadi",   "race": "Canine", "role": "Support" },
+      { "id": "ssg_sup2",  "name": "Sanaa",   "race": "Hyena",  "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_clockwork_savanna",
+    "name": "Clockwork Savanna",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "csav_tank1", "name": "Baraka",  "race": "Canine",  "role": "Tank" },
+      { "id": "csav_tank2", "name": "Lindiwe", "race": "Feline",  "role": "Tank" },
+      { "id": "csav_dps1",  "name": "Taye",    "race": "Hyena",   "role": "DPS" },
+      { "id": "csav_dps2",  "name": "Nia",     "race": "Canine",  "role": "DPS" },
+      { "id": "csav_sup1",  "name": "Eshe",    "race": "Feline",  "role": "Support" },
+      { "id": "csav_sup2",  "name": "Kamau",   "race": "Hyena",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_dustwheel_kings",
+    "name": "Dustwheel Kings",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "dwk_tank1", "name": "Musa",    "race": "Feline",  "role": "Tank" },
+      { "id": "dwk_tank2", "name": "Zahra",   "race": "Canine",  "role": "Tank" },
+      { "id": "dwk_dps1",  "name": "Abasi",   "race": "Hyena",   "role": "DPS" },
+      { "id": "dwk_dps2",  "name": "Rudo",    "race": "Feline",  "role": "DPS" },
+      { "id": "dwk_sup1",  "name": "Jelani",  "race": "Canine",  "role": "Support" },
+      { "id": "dwk_sup2",  "name": "Omari",   "race": "Hyena",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_ember_cog_clan",
+    "name": "Ember Cog Clan",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "ecc_tank1", "name": "Tariq",   "race": "Canine",  "role": "Tank" },
+      { "id": "ecc_tank2", "name": "Hadiya",  "race": "Feline",  "role": "Tank" },
+      { "id": "ecc_dps1",  "name": "Mirembe", "race": "Hyena",   "role": "DPS" },
+      { "id": "ecc_dps2",  "name": "Zola",    "race": "Canine",  "role": "DPS" },
+      { "id": "ecc_sup1",  "name": "Amiri",   "race": "Feline",  "role": "Support" },
+      { "id": "ecc_sup2",  "name": "Chipo",   "race": "Hyena",   "role": "Support" }
+    ]
+  },
+  {
+    "id": "desert_mirage_piston_circle",
+    "name": "Mirage Piston Circle",
+    "region": "SteampunkDesert",
+    "fighters": [
+      { "id": "mpc_tank1", "name": "Khadija", "race": "Feline",  "role": "Tank" },
+      { "id": "mpc_tank2", "name": "Salim",   "race": "Canine",  "role": "Tank" },
+      { "id": "mpc_dps1",  "name": "Yaw",     "race": "Hyena",   "role": "DPS" },
+      { "id": "mpc_dps2",  "name": "Ayo",     "race": "Canine",  "role": "DPS" },
+      { "id": "mpc_sup1",  "name": "Nala",    "race": "Feline",  "role": "Support" },
+      { "id": "mpc_sup2",  "name": "Zane",    "race": "Hyena",   "role": "Support" }
+    ]
+  }
+  ]
+}

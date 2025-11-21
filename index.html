@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ARC-ARENA Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    #league-table {
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      min-width: 100%;
+    }
+    #league-table th,
+    #league-table td {
+      border: 1px solid #888;
+      padding: 4px 8px;
+      text-align: center;
+    }
+    #league-table tr.promotion {
+      background: #203820; /* dark green-ish */
+      color: #f0f0f0;
+    }
+    #league-table tr.relegation {
+      background: #382020; /* dark red-ish */
+      color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>ARC-ARENA Manager</h1>
+
+<!-- Test match section -->
+<button id="run-test-match">Run Test Match</button>
+
+<h2>Match Log</h2>
+<pre id="match-log">(no matches run yet)</pre>
+
+<hr>
+
+<!-- League simulation section -->
+<button id="run-leagues">Simulate Leagues</button>
+
+<h2>League Simulation Log</h2>
+<pre id="league-log">(no league simulations run yet)</pre>
+
+<h2>League Tables</h2>
+<div>
+  <label>
+    Region:
+    <select id="league-region"></select>
+  </label>
+  <label style="margin-left: 1rem;">
+    Tier:
+    <select id="league-tier"></select>
+  </label>
+</div>
+
+<table id="league-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Team</th>
+      <th>Pts</th>
+      <th>W</th>
+      <th>D</th>
+      <th>L</th>
+      <th>SP For</th>
+      <th>SP Against</th>
+      <th>SP Diff</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- rows injected by JS -->
+  </tbody>
+</table>
+
+<p id="league-note"></p>
+
+<script src="js/utils.js"></script>
+<script src="js/data_loader.js"></script>
+<script src="js/generator_fighters.js"></script>
+<script src="js/engine_leagues.js"></script>
+<script src="js/engine_match.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
