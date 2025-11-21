@@ -241,30 +241,45 @@ function simulateAllLeagues() {
 
   const lines = [];
   lines.push("=== Domestic League Simulation ===");
+  const results = {};
 
   for (const region in GLOBAL_LEAGUES) {
     const tiers = GLOBAL_LEAGUES[region];
     if (!tiers || tiers.length === 0) continue;
 
-    const tier1Teams = tiers[0];
-    if (!tier1Teams || tier1Teams.length < 2) {
-      lines.push(`\nRegion ${region}: Not enough teams to form a league.`);
-      continue;
-    }
+    results[region] = [];
 
     lines.push(`\n### Region: ${region} ###`);
 
-    const { fixtures, table } = simulateLeagueSeason(tier1Teams);
+    tiers.forEach((tierTeams, tierIndex) => {
+      if (!tierTeams || tierTeams.length < 2) {
+        lines.push(` Tier ${tierIndex + 1}: Not enough teams to form a league.`);
+        return;
+      }
 
-    table.forEach((row, index) => {
-      const diff = row.spFor - row.spAgainst;
-      lines.push(
-        `${index + 1}. ${row.team.name} - ${row.points} pts (W:${row.wins}  D:${row.draws} L:${row.losses}, SP diff: ${diff})`
-      );
+      // simulate one full season for this tier
+      const seasonResult = simulateLeagueSeason(tierTeams); // { fixtures, table }
+      results[region][tierIndex] = seasonResult;
+
+      lines.push(` Tier ${tierIndex + 1} Final Table:`);
+
+      seasonResult.table.forEach((row, index) => {
+        const diff = row.spFor - row.spAgainst;
+        lines.push(
+          `  ${index + 1}. ${row.team.name} - ${row.points} pts ` +
+          `(W:${row.wins} D:${row.draws} L:${row.losses}, SP diff: ${diff})`
+        );
+      });
     });
   }
 
+  // store for the League Tables UI
+  GLOBAL_LEAGUE_RESULTS = results;
+
+  // show text summary in the log
   renderLeagueLog(lines);
+
+  // refresh the League Tables panel using the latest results
   renderCurrentLeagueTable();
 }
 
