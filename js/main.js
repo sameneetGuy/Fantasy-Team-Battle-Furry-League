@@ -95,90 +95,6 @@ function renderCurrentLeagueTable() {
 
   tbody.innerHTML = "";
 
-  if (!GLOBAL_LEAGUE_RESULTS ||
-      !GLOBAL_LEAGUE_RESULTS[region] ||
-      !GLOBAL_LEAGUE_RESULTS[region][tierIndex]) {
-    noteEl.textContent = "No season simulation found for this region/tier. Click \"Simulate Leagues\" first.";
-    return;
-  }
-
-  const seasonResult = GLOBAL_LEAGUE_RESULTS[region][tierIndex];
-  const rows = seasonResult.table; // array of { team, points, wins, draws, losses, spFor, spAgainst }
-
-  const tierCount = GLOBAL_LEAGUES[region].length;
-  const teamCount = rows.length;
-
-  // Determine promotion / relegation slots
-  let promotionCount = 0;
-  let relegationCount = 0;
-
-  if (tierCount > 1) {
-    if (tierIndex === 0) {
-      // Top tier: only relegation (bottom 2)
-      relegationCount = Math.min(2, teamCount);
-    } else if (tierIndex === tierCount - 1) {
-      // Bottom tier: only promotion (top 2)
-      promotionCount = Math.min(2, teamCount);
-    } else {
-      // Middle tiers: promotion (top 2) and relegation (bottom 2)
-      promotionCount = Math.min(2, teamCount);
-      relegationCount = Math.min(2, teamCount - promotionCount);
-    }
-  }
-
-  rows.forEach((row, index) => {
-    const tr = document.createElement("tr");
-
-    if (promotionCount > 0 && index < promotionCount) {
-      tr.classList.add("promotion");
-    } else if (relegationCount > 0 && index >= teamCount - relegationCount) {
-      tr.classList.add("relegation");
-    }
-
-    const diff = row.spFor - row.spAgainst;
-
-    tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${row.team.name}</td>
-      <td>${row.points}</td>
-      <td>${row.wins}</td>
-      <td>${row.draws}</td>
-      <td>${row.losses}</td>
-      <td>${row.spFor}</td>
-      <td>${row.spAgainst}</td>
-      <td>${diff}</td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  // Note explaining formatting
-  if (tierCount > 1) {
-    if (tierIndex === 0) {
-      noteEl.textContent = "Top tier: red rows are in the relegation zone.";
-    } else if (tierIndex === tierCount - 1) {
-      noteEl.textContent = "Bottom tier: green rows are in the promotion zone.";
-    } else {
-      noteEl.textContent = "Middle tier: green rows are promoted, red rows are relegated.";
-    }
-  } else {
-    noteEl.textContent = "Single-tier region: no promotion or relegation.";
-  }
-}
-
-function renderCurrentLeagueTable() {
-  const regionSelect = document.getElementById("league-region");
-  const tierSelect = document.getElementById("league-tier");
-  const tbody = document.querySelector("#league-table tbody");
-  const noteEl = document.getElementById("league-note");
-
-  if (!regionSelect || !tierSelect || !tbody || !noteEl) return;
-
-  const region = regionSelect.value;
-  const tierIndex = parseInt(tierSelect.value || "0", 10);
-
-  tbody.innerHTML = "";
-
   if (!GLOBAL_LEAGUE_RESULTS[region] ||
       !GLOBAL_LEAGUE_RESULTS[region][tierIndex]) {
     noteEl.textContent = "No simulation yet. Run Simulate Leagues.";
@@ -235,7 +151,7 @@ function renderCurrentLeagueTable() {
 
 function simulateAllLeagues() {
   if (!GLOBAL_LEAGUES) {
-    renderLeagueLog(["Leagues not initialized yet."]);
+    renderLeagueLog(["Leagues not initialized yet."]); 
     return;
   }
 
@@ -249,7 +165,7 @@ function simulateAllLeagues() {
 
     results[region] = [];
 
-    lines.push(`\n### Region: ${region} ###`);
+    lines.push(`\nRegion: ${region}`);
 
     tiers.forEach((tierTeams, tierIndex) => {
       if (!tierTeams || tierTeams.length < 2) {
@@ -258,18 +174,11 @@ function simulateAllLeagues() {
       }
 
       // simulate one full season for this tier
-      const seasonResult = simulateLeagueSeason(tierTeams); // { fixtures, table }
+      const seasonResult = simulateLeagueSeason(tierTeams); // { fixtures, table, log }
       results[region][tierIndex] = seasonResult;
 
-      lines.push(` Tier ${tierIndex + 1} Final Table:`);
-
-      seasonResult.table.forEach((row, index) => {
-        const diff = row.spFor - row.spAgainst;
-        lines.push(
-          `  ${index + 1}. ${row.team.name} - ${row.points} pts ` +
-          `(W:${row.wins} D:${row.draws} L:${row.losses}, SP diff: ${diff})`
-        );
-      });
+      lines.push(` Tier ${tierIndex + 1} Results:`);
+      seasonResult.log.forEach(line => lines.push(`  ${line}`));
     });
   }
 

@@ -1,0 +1,211 @@
+:root {
+  --bg: #0d1321;
+  --panel: rgba(20, 28, 46, 0.85);
+  --accent: #5de1a4;
+  --accent-strong: #4fb58c;
+  --text: #e8ecf2;
+  --muted: #9aa7c7;
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at 15% 20%, rgba(93, 225, 164, 0.08), transparent 25%),
+              radial-gradient(circle at 80% 0%, rgba(93, 225, 164, 0.05), transparent 20%),
+              linear-gradient(135deg, #0b1024 0%, #0d1321 40%, #090e1d 100%);
+  color: var(--text);
+}
+
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.hero {
+  background: linear-gradient(135deg, rgba(93, 225, 164, 0.18), rgba(93, 225, 164, 0.08));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.5px;
+}
+
+.hero p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.hero .actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  color: #0b1024;
+  background: var(--accent);
+  box-shadow: 0 6px 16px rgba(93, 225, 164, 0.35);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(93, 225, 164, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(93, 225, 164, 0.3);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+  letter-spacing: 0.2px;
+}
+
+.muted {
+  color: var(--muted);
+  margin-top: 0;
+  font-size: 0.95rem;
+}
+
+.log-box {
+  background: rgba(11, 16, 36, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 180px;
+  white-space: pre-wrap;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  color: var(--text);
+  line-height: 1.4;
+  overflow-y: auto;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.selector-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.selector-row label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.selector-row select {
+  margin-left: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0f152a;
+  color: var(--text);
+  font-weight: 600;
+  outline: none;
+}
+
+#league-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  margin-top: 10px;
+  background: rgba(13, 19, 33, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#league-table th,
+#league-table td {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+#league-table thead {
+  background: rgba(93, 225, 164, 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+#league-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+#league-table tr.promotion {
+  background: rgba(93, 225, 164, 0.15);
+  color: var(--text);
+}
+
+#league-table tr.relegation {
+  background: rgba(255, 90, 90, 0.15);
+  color: var(--text);
+}
+
+#league-note {
+  color: var(--muted);
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.small {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
