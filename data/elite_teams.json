@@ -1,0 +1,160 @@
+{
+  "teams": [
+    {
+      "id": "led_white_zenith",
+      "name": "White Zenith",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "wz_tank1", "name": "Astra",   "race": "Ursine",  "role": "Tank" },
+        { "id": "wz_tank2", "name": "Vanguard","race": "Canine",  "role": "Tank" },
+        { "id": "wz_dps1",  "name": "Lucent",  "race": "Feline",  "role": "DPS" },
+        { "id": "wz_dps2",  "name": "Pulse",   "race": "Hyena",   "role": "DPS" },
+        { "id": "wz_sup1",  "name": "Halo",    "race": "Mustelid","role": "Support" },
+        { "id": "wz_sup2",  "name": "Glare",   "race": "Canine",  "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_crystal_crown",
+      "name": "Crystal Crown",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "cc_tank1", "name": "Marble",  "race": "Feline",   "role": "Tank" },
+        { "id": "cc_tank2", "name": "Obsidian","race": "Ursine",   "role": "Tank" },
+        { "id": "cc_dps1",  "name": "Shard",   "race": "Canine",   "role": "DPS" },
+        { "id": "cc_dps2",  "name": "Glint",   "race": "Mustelid", "role": "DPS" },
+        { "id": "cc_sup1",  "name": "Quartz",  "race": "Feline",   "role": "Support" },
+        { "id": "cc_sup2",  "name": "Prism",   "race": "Canine",   "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_helios_prime",
+      "name": "Helios Prime",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "hp_tank1", "name": "Atlas",   "race": "Canine",   "role": "Tank" },
+        { "id": "hp_tank2", "name": "Bastion", "race": "Ursine",   "role": "Tank" },
+        { "id": "hp_dps1",  "name": "Solaris", "race": "Feline",   "role": "DPS" },
+        { "id": "hp_dps2",  "name": "Comet",   "race": "Hyena",    "role": "DPS" },
+        { "id": "hp_sup1",  "name": "Aurora",  "race": "Canine",   "role": "Support" },
+        { "id": "hp_sup2",  "name": "Ion",     "race": "Mustelid", "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_platinum_district",
+      "name": "Platinum District Guardians",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "pd_tank1", "name": "Rampart", "race": "Ursine",    "role": "Tank" },
+        { "id": "pd_tank2", "name": "Sentinel","race": "Canine",    "role": "Tank" },
+        { "id": "pd_dps1",  "name": "Apex",    "race": "Feline",    "role": "DPS" },
+        { "id": "pd_dps2",  "name": "Flash",   "race": "Mustelid",  "role": "DPS" },
+        { "id": "pd_sup1",  "name": "Lumine",  "race": "Feline",    "role": "Support" },
+        { "id": "pd_sup2",  "name": "Pearl",   "race": "Canine",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_million_mile",
+      "name": "Million Mile Elevens",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "mm_tank1", "name": "Voyager", "race": "Canine",    "role": "Tank" },
+        { "id": "mm_tank2", "name": "Goliath", "race": "Ursine",    "role": "Tank" },
+        { "id": "mm_dps1",  "name": "Arrow",   "race": "Feline",    "role": "DPS" },
+        { "id": "mm_dps2",  "name": "Vector",  "race": "Hyena",     "role": "DPS" },
+        { "id": "mm_sup1",  "name": "Nimbus",  "race": "Mustelid",  "role": "Support" },
+        { "id": "mm_sup2",  "name": "Circuit", "race": "Canine",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_stellar_vantage",
+      "name": "Stellar Vantage",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "sv_tank1", "name": "Bulwark", "race": "Ursine",    "role": "Tank" },
+        { "id": "sv_tank2", "name": "Rampage", "race": "Canine",    "role": "Tank" },
+        { "id": "sv_dps1",  "name": "Nebula",  "race": "Feline",    "role": "DPS" },
+        { "id": "sv_dps2",  "name": "Orbit",   "race": "Mustelid",  "role": "DPS" },
+        { "id": "sv_sup1",  "name": "Beacon",  "race": "Canine",    "role": "Support" },
+        { "id": "sv_sup2",  "name": "Pulsewave","race":"Feline",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_neon_horizon",
+      "name": "Neon Horizon",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "nh_tank1", "name": "Chrome",   "race": "Canine",   "role": "Tank" },
+        { "id": "nh_tank2", "name": "Titan",    "race": "Ursine",   "role": "Tank" },
+        { "id": "nh_dps1",  "name": "Digit",    "race": "Mustelid", "role": "DPS" },
+        { "id": "nh_dps2",  "name": "Surge",    "race": "Feline",   "role": "DPS" },
+        { "id": "nh_sup1",  "name": "Spectra",  "race": "Canine",   "role": "Support" },
+        { "id": "nh_sup2",  "name": "Wavelength","race":"Hyena",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_ascendant_lane",
+      "name": "Ascendant Lane",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "al_tank1", "name": "Guardian", "race": "Feline",    "role": "Tank" },
+        { "id": "al_tank2", "name": "Helm",     "race": "Ursine",    "role": "Tank" },
+        { "id": "al_dps1",  "name": "Prime",    "race": "Canine",    "role": "DPS" },
+        { "id": "al_dps2",  "name": "Sting",    "race": "Mustelid",  "role": "DPS" },
+        { "id": "al_sup1",  "name": "Glow",     "race": "Feline",    "role": "Support" },
+        { "id": "al_sup2",  "name": "Focus",    "race": "Canine",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_opaline_heights",
+      "name": "Opaline Heights",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "oh_tank1","name": "Ward",      "race": "Canine",    "role": "Tank" },
+        { "id": "oh_tank2","name": "Crag",      "race": "Ursine",    "role": "Tank" },
+        { "id": "oh_dps1", "name": "Violet",    "race": "Feline",    "role": "DPS" },
+        { "id": "oh_dps2", "name": "Spectrum",  "race": "Hyena",     "role": "DPS" },
+        { "id": "oh_sup1", "name": "Haloette",  "race": "Mustelid",  "role": "Support" },
+        { "id": "oh_sup2", "name": "Silk",      "race": "Feline",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_luminary_circuit",
+      "name": "Luminary Circuit",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "lc_tank1","name": "Aegis",     "race": "Ursine",    "role": "Tank" },
+        { "id": "lc_tank2","name": "Keystone",  "race": "Canine",    "role": "Tank" },
+        { "id": "lc_dps1", "name": "Voltair",   "race": "Feline",    "role": "DPS" },
+        { "id": "lc_dps2", "name": "Trace",     "race": "Mustelid",  "role": "DPS" },
+        { "id": "lc_sup1", "name": "Dawn",      "race": "Canine",    "role": "Support" },
+        { "id": "lc_sup2", "name": "Ribbon",    "race": "Feline",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_prism_pavilion",
+      "name": "Prism Pavilion",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "pp_tank1","name": "Barrier",   "race": "Ursine",    "role": "Tank" },
+        { "id": "pp_tank2","name": "Mariner",   "race": "Canine",    "role": "Tank" },
+        { "id": "pp_dps1", "name": "Glitter",   "race": "Mustelid",  "role": "DPS" },
+        { "id": "pp_dps2", "name": "Harmony",   "race": "Feline",    "role": "DPS" },
+        { "id": "pp_sup1", "name": "Softlight", "race": "Canine",    "role": "Support" },
+        { "id": "pp_sup2", "name": "Hue",       "race": "Feline",    "role": "Support" }
+      ]
+    },
+    {
+      "id": "led_aurelion_spire",
+      "name": "Aurelion Spire",
+      "region": "LEDpunkElite",
+      "fighters": [
+        { "id": "as_tank1","name": "BulwarkX",  "race": "Canine",    "role": "Tank" },
+        { "id": "as_tank2","name": "Glacius",   "race": "Ursine",    "role": "Tank" },
+        { "id": "as_dps1", "name": "Razorbeam", "race": "Feline",    "role": "DPS" },
+        { "id": "as_dps2", "name": "Ionlash",   "race": "Hyena",     "role": "DPS" },
+        { "id": "as_sup1", "name": "Mirage",    "race": "Mustelid",  "role": "Support" },
+        { "id": "as_sup2", "name": "Aura",      "race": "Feline",    "role": "Support" }
+      ]
+    }
+  ]
+}
