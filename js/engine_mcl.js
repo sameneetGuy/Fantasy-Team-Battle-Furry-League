@@ -330,7 +330,7 @@ function simulateMCLSeason({
       finalists: [semi1Winner, semi2Winner]
     },
     grandFinal: { series: grandFinal, champion },
-    regionalPoints,
+    regionPoints,
     seasonalScores,
     coefficientHistory: updatedHistory,
     nextSeasonSlots

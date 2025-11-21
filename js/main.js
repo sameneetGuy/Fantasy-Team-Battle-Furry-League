@@ -58,6 +58,24 @@ function renderMCLPlaceholder() {
   if (coeffs) coeffs.innerHTML = placeholder;
 }
 
+function renderMCLPlaceholder() {
+  const seasonLabel = document.getElementById("mcl-season-label");
+  const championLabel = document.getElementById("mcl-champion-label");
+  const slotSummary = document.getElementById("mcl-slot-summary");
+  const conferences = document.getElementById("mcl-conferences");
+  const playoffs = document.getElementById("mcl-playoffs");
+  const coeffs = document.getElementById("mcl-coefficients");
+
+  if (seasonLabel) seasonLabel.textContent = "No MCL season simulated yet.";
+  if (championLabel) championLabel.textContent = "Champion: —";
+  if (slotSummary) slotSummary.innerHTML = "<span class=\"pill subtle\">Season 1 allocation defaults to 4/3/3/2.</span>";
+
+  const placeholder = "<p class=\"muted-compact\">Run an MCL season to view standings and playoff results.</p>";
+  if (conferences) conferences.innerHTML = placeholder;
+  if (playoffs) playoffs.innerHTML = placeholder;
+  if (coeffs) coeffs.innerHTML = placeholder;
+}
+
 function initLeagueSelectors() {
   const regionSelect = document.getElementById("league-region");
   const tierSelect = document.getElementById("league-tier");
@@ -112,6 +130,240 @@ function renderLeagueLog(lines) {
   const pre = document.getElementById("league-log");
   if (!pre) return;
   pre.textContent = lines.join("\n");
+}
+
+function simulateCurrentMCLSeason(domesticStandings = null) {
+  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 || !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
+    console.warn("MCL cannot run until teams are loaded.");
+    return null;
+  }
+
+  const result = simulateMCLSeason({
+    seasonNumber: GLOBAL_MCL_SEASON,
+    teams: GLOBAL_TEAMS,
+    eliteTeams: GLOBAL_ELITE_TEAMS,
+    coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
+    domesticStandings
+  });
+
+  GLOBAL_MCL_COEFFICIENTS = result.coefficientHistory;
+  GLOBAL_MCL_SEASON += 1;
+
+  console.log(`MCL Season ${result.seasonNumber} complete. Champion: ${result.grandFinal.champion.name}`);
+  console.log("Next season slots:", result.nextSeasonSlots);
+  return result;
+}
+
+function formatRegion(region) {
+  return region.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function describeSlots(slots) {
+  return MCL_REGIONAL_POOL
+    .map(region => `${formatRegion(region)} ${slots[region] || 0}`)
+    .join(" • ");
+}
+
+function buildConferenceTableElement(title, tableRows) {
+  const wrapper = document.createElement("div");
+  const table = document.createElement("table");
+  table.className = "mini-table";
+
+  const caption = document.createElement("caption");
+  caption.textContent = title;
+  table.appendChild(caption);
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr>
+      <th>#</th>
+      <th>Team</th>
+      <th>Pts</th>
+      <th>SP For</th>
+      <th>SP Against</th>
+      <th>SP Diff</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  tableRows.forEach((row, idx) => {
+    const diff = row.spFor - row.spAgainst;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${row.team.name}</td>
+      <td>${row.points}</td>
+      <td>${row.spFor}</td>
+      <td>${row.spAgainst}</td>
+      <td>${diff}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  return wrapper;
+}
+
+function formatSeriesLine(series, teamA, teamB) {
+  const winnerName = series.winner === "A" ? teamA.name : teamB.name;
+  return `${teamA.name} ${series.winsA}-${series.winsB} ${teamB.name} (${winnerName})`;
+}
+
+function addBracketBox(container, title, lines) {
+  const box = document.createElement("div");
+  box.className = "bracket-box";
+
+  const heading = document.createElement("h4");
+  heading.textContent = title;
+  box.appendChild(heading);
+
+  lines.forEach(text => {
+    const p = document.createElement("div");
+    p.className = "bracket-line";
+    p.textContent = text;
+    box.appendChild(p);
+  });
+
+  container.appendChild(box);
+}
+
+function renderMCLPlayoffs(result) {
+  const playoffs = document.getElementById("mcl-playoffs");
+  if (!playoffs) return;
+  playoffs.innerHTML = "";
+
+  const led2 = result.ledConference.table[1].team;
+  const led3 = result.ledConference.table[2].team;
+  const cont2 = result.continentalConference.table[1].team;
+  const cont3 = result.continentalConference.table[2].team;
+
+  addBracketBox(playoffs, "Wildcards", [
+    formatSeriesLine(result.wildcard.led.series, led2, led3),
+    formatSeriesLine(result.wildcard.continental.series, cont2, cont3)
+  ]);
+
+  const [semi1A, semi1B] = result.semifinals.semifinal1.pairing;
+  const [semi2A, semi2B] = result.semifinals.semifinal2.pairing;
+
+  addBracketBox(playoffs, "Semifinals", [
+    formatSeriesLine(result.semifinals.semifinal1.series, semi1A, semi1B),
+    formatSeriesLine(result.semifinals.semifinal2.series, semi2A, semi2B)
+  ]);
+
+  const [finalA, finalB] = result.semifinals.finalists;
+  addBracketBox(playoffs, "Grand Final", [
+    formatSeriesLine(result.grandFinal.series, finalA, finalB),
+    `Champion: ${result.grandFinal.champion.name}`
+  ]);
+}
+
+function renderMCLCoefficients(result) {
+  const coeffs = document.getElementById("mcl-coefficients");
+  if (!coeffs) return;
+  coeffs.innerHTML = "";
+
+  const table = document.createElement("table");
+  table.className = "mini-table";
+
+  const caption = document.createElement("caption");
+  caption.textContent = "Regional Coefficients";
+  table.appendChild(caption);
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr>
+      <th>Region</th>
+      <th>Season Score</th>
+      <th>Last 3 Seasons</th>
+      <th>Next Slots</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  [MCL_LED_REGION, ...MCL_REGIONAL_POOL].forEach(region => {
+    const tr = document.createElement("tr");
+    const seasonal = (result.seasonalScores[region] || 0).toFixed(2);
+    const history = result.coefficientHistory[region] || [];
+    const historyText = history.length > 0 ? history.join(", ") : "-";
+    const nextSlots = region === MCL_LED_REGION
+      ? "12 (permanent)"
+      : `${result.nextSeasonSlots[region] || 0}`;
+
+    tr.innerHTML = `
+      <td>${formatRegion(region)}</td>
+      <td>${seasonal}</td>
+      <td>${historyText}</td>
+      <td>${nextSlots}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  coeffs.appendChild(table);
+}
+
+function renderMCLConferences(result) {
+  const conferences = document.getElementById("mcl-conferences");
+  if (!conferences) return;
+  conferences.innerHTML = "";
+
+  const ledTable = buildConferenceTableElement("LED Conference", result.ledConference.table);
+  const continentalTable = buildConferenceTableElement("Continental Conference", result.continentalConference.table);
+
+  conferences.appendChild(ledTable);
+  conferences.appendChild(continentalTable);
+}
+
+function renderMCLSlots(result) {
+  const slotSummary = document.getElementById("mcl-slot-summary");
+  if (!slotSummary) return;
+  slotSummary.innerHTML = "";
+
+  const current = document.createElement("span");
+  current.className = "pill";
+  current.textContent = `Season ${result.seasonNumber} slots: ${describeSlots(result.slotsUsed)}`;
+
+  const next = document.createElement("span");
+  next.className = "pill subtle";
+  next.textContent = `Next season preview: ${describeSlots(result.nextSeasonSlots)}`;
+
+  slotSummary.appendChild(current);
+  slotSummary.appendChild(next);
+}
+
+function renderMCLResult(result) {
+  const seasonLabel = document.getElementById("mcl-season-label");
+  const championLabel = document.getElementById("mcl-champion-label");
+
+  if (seasonLabel) seasonLabel.textContent = `MCL Season ${result.seasonNumber}`;
+  if (championLabel) championLabel.textContent = `Champion: ${result.grandFinal.champion.name}`;
+
+  renderMCLSlots(result);
+  renderMCLConferences(result);
+  renderMCLPlayoffs(result);
+  renderMCLCoefficients(result);
+}
+
+function buildDomesticOrderingFromResults() {
+  if (!GLOBAL_LEAGUE_RESULTS) return null;
+  const ordering = {};
+  Object.entries(GLOBAL_LEAGUE_RESULTS).forEach(([region, tiers]) => {
+    if (tiers && tiers[0] && tiers[0].table) {
+      ordering[region] = tiers[0].table.map(row => row.team.id);
+    }
+  });
+  return Object.keys(ordering).length > 0 ? ordering : null;
+}
+
+function simulateMCLAndRender() {
+  const domesticOrdering = buildDomesticOrderingFromResults();
+  const result = simulateCurrentMCLSeason(domesticOrdering);
+  if (!result) return;
+  GLOBAL_MCL_LAST_RESULT = result;
+  renderMCLResult(result);
 }
 
 function simulateCurrentMCLSeason(domesticStandings = null) {
