@@ -179,28 +179,24 @@ function simulateAllLeagues() {
 function simulateLeagueSeason(regionTeams) {
   const fixtures = generateRoundRobinFixtures(regionTeams);
   const table = initializeLeagueTable(regionTeams);
-
-  console.log("=== Starting League Season ===");
+  const logLines = [];
 
   for (let round = 0; round < fixtures.length; round++) {
-    console.log(`\n--- ROUND ${round + 1} ---`);
+    logLines.push(`Round ${round + 1}`);
 
     for (const [teamA, teamB] of fixtures[round]) {
       const result = simulateLeagueMatch(teamA, teamB);
 
       let line;
       if (result.winner === "D") {
-        line = `${teamA.name} vs ${teamB.name}: Draw (${result.winsA}-${result.winsB})`;
+        line = `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (Draw)`;
       } else {
         const winnerName = result.winner === "A" ? teamA.name : teamB.name;
-        line = `${teamA.name} vs ${teamB.name}: ${winnerName} wins (${result.winsA}-${result.winsB})`;
+        line = `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (${winnerName} win)`;
       }
-      console.log(line);
-
+      logLines.push(`• ${line}`);
 
       applyMatchToTable(result, teamA, teamB, table);
-
-      console.log(`${teamA.name} vs ${teamB.name}: Winner Team ${result.winner}`);
     }
 
     // After each round, recover fatigue for all teams
@@ -208,8 +204,6 @@ function simulateLeagueSeason(regionTeams) {
       recoverFatigueBetweenMatches(t);
     }
   }
-
-  console.log("\n=== FINAL TABLE ===");
 
   // Convert table object to sorted array
   const sorted = Object.values(table).sort((a, b) => {
@@ -219,13 +213,7 @@ function simulateLeagueSeason(regionTeams) {
     return diffB - diffA;
   });
 
-  sorted.forEach((row, index) => {
-    console.log(
-      `${index + 1}. ${row.team.name} - ${row.points} pts (W:${row.wins} D:${row.draws} L:${row.losses}) [SP diff: ${row.spFor - row.spAgainst}]`
-    );
-  });
-
-  return { fixtures, table: sorted };
+  return { fixtures, table: sorted, log: logLines };
 }
 
 function progressInjuries(team) {
