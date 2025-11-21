@@ -1,9 +1,12 @@
 let GLOBAL_TEAMS = [];
+let GLOBAL_ELITE_TEAMS = [];
 let GLOBAL_LEAGUES = null;          // from buildRegionalLeagues
 let GLOBAL_LEAGUE_RESULTS = {};     // filled after simulateAllLeagues
+let GLOBAL_MCL_COEFFICIENTS = createEmptyCoefficientHistory();
+let GLOBAL_MCL_SEASON = 1;
 
 async function startNewGame() {
-  const { teams: teamData, abilities: abilityData } = await loadGameData();
+  const { teams: teamData, abilities: abilityData, elite: eliteData } = await loadGameData();
 
   const ALL_ABILITIES = abilityData.abilities;
   const rawTeams = teamData.teams;
@@ -12,10 +15,18 @@ async function startNewGame() {
     .map(t => buildTeam(t, ALL_ABILITIES))
     .filter(Boolean);
 
+  const eliteTeams = eliteData.teams
+    .map(t => buildTeam(t, ALL_ABILITIES))
+    .filter(Boolean);
+
   GLOBAL_TEAMS = teams;
+  GLOBAL_ELITE_TEAMS = eliteTeams;
   GLOBAL_LEAGUES = buildRegionalLeagues(teams);
+  GLOBAL_MCL_COEFFICIENTS = createEmptyCoefficientHistory();
+  GLOBAL_MCL_SEASON = 1;
 
   console.log("Teams:", GLOBAL_TEAMS);
+  console.log("LED Elite Teams:", GLOBAL_ELITE_TEAMS);
   console.log("Regional Leagues:", GLOBAL_LEAGUES);
 
   initLeagueSelectors();
@@ -80,6 +91,28 @@ function renderLeagueLog(lines) {
   const pre = document.getElementById("league-log");
   if (!pre) return;
   pre.textContent = lines.join("\n");
+}
+
+function simulateCurrentMCLSeason(domesticStandings = null) {
+  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 || !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
+    console.warn("MCL cannot run until teams are loaded.");
+    return null;
+  }
+
+  const result = simulateMCLSeason({
+    seasonNumber: GLOBAL_MCL_SEASON,
+    teams: GLOBAL_TEAMS,
+    eliteTeams: GLOBAL_ELITE_TEAMS,
+    coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
+    domesticStandings
+  });
+
+  GLOBAL_MCL_COEFFICIENTS = result.coefficientHistory;
+  GLOBAL_MCL_SEASON += 1;
+
+  console.log(`MCL Season ${result.seasonNumber} complete. Champion: ${result.grandFinal.champion.name}`);
+  console.log("Next season slots:", result.nextSeasonSlots);
+  return result;
 }
 
 function renderCurrentLeagueTable() {
