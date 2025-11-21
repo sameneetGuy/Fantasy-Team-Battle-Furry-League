@@ -16,6 +16,7 @@
       <div class="actions">
         <button id="run-test-match" class="btn secondary">Run Test Match</button>
         <button id="run-leagues" class="btn">Simulate Leagues</button>
+        <button id="run-mcl" class="btn">Simulate MCL Season</button>
       </div>
     </header>
 
@@ -75,6 +76,30 @@
         </table>
 
         <p id="league-note"></p>
+      </section>
+
+      <section class="card" id="mcl-card" style="grid-column: span 2;">
+        <div class="section-header">
+          <div>
+            <h2>Major Continental League</h2>
+            <span class="small">Conference tables, playoffs, and coefficients</span>
+          </div>
+          <button id="run-mcl-secondary" class="btn secondary">Simulate Season</button>
+        </div>
+        <p class="muted">Run the continental competition and instantly view standings, playoffs, and regional strength.</p>
+
+        <div class="pill-row">
+          <span id="mcl-season-label" class="pill subtle">No MCL season simulated yet.</span>
+          <span id="mcl-champion-label" class="pill">Champion: —</span>
+        </div>
+
+        <div id="mcl-slot-summary" class="pill-row"></div>
+
+        <div id="mcl-conferences" class="mcl-grid"></div>
+
+        <div id="mcl-playoffs" class="mcl-bracket"></div>
+
+        <div id="mcl-coefficients" class="mcl-grid"></div>
       </section>
     </main>
   </div>
