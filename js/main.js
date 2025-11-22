@@ -5,6 +5,10 @@ let GLOBAL_LEAGUE_RESULTS = {};     // filled after simulateAllLeagues
 let GLOBAL_MCL_COEFFICIENTS = createEmptyCoefficientHistory();
 let GLOBAL_MCL_SEASON = 1;
 let GLOBAL_MCL_LAST_RESULT = null;
+let GLOBAL_LEAGUE_SIM_STATE = null;
+let GLOBAL_MCL_SIM_STATE = null;
+let GLOBAL_CURRENT_DAY = 1;
+let GLOBAL_DAY_LOG_LINES = [];
 
 async function startNewGame() {
   const { teams: teamData, abilities: abilityData, elite: eliteData } = await loadGameData();
@@ -26,6 +30,11 @@ async function startNewGame() {
   GLOBAL_MCL_COEFFICIENTS = createEmptyCoefficientHistory();
   GLOBAL_MCL_SEASON = 1;
   GLOBAL_MCL_LAST_RESULT = null;
+  GLOBAL_LEAGUE_SIM_STATE = createLeagueSimulationState(GLOBAL_LEAGUES);
+  GLOBAL_MCL_SIM_STATE = null;
+  GLOBAL_CURRENT_DAY = 1;
+  GLOBAL_DAY_LOG_LINES = [];
+  GLOBAL_LEAGUE_RESULTS = buildLeagueResultsFromState(GLOBAL_LEAGUE_SIM_STATE);
 
   console.log("Teams:", GLOBAL_TEAMS);
   console.log("LED Elite Teams:", GLOBAL_ELITE_TEAMS);
@@ -130,6 +139,11 @@ function renderLeagueLog(lines) {
   const pre = document.getElementById("league-log");
   if (!pre) return;
   pre.textContent = lines.join("\n");
+}
+
+function appendToLeagueLog(lines) {
+  GLOBAL_DAY_LOG_LINES.push(...lines);
+  renderLeagueLog(GLOBAL_DAY_LOG_LINES);
 }
 
 function simulateCurrentMCLSeason(domesticStandings = null) {
@@ -345,6 +359,304 @@ function renderMCLResult(result) {
   renderMCLConferences(result);
   renderMCLPlayoffs(result);
   renderMCLCoefficients(result);
+}
+
+function createLeagueSimulationState(leagues) {
+  const state = { regions: {}, completed: false };
+  if (!leagues) return state;
+
+  Object.entries(leagues).forEach(([region, tiers]) => {
+    state.regions[region] = tiers.map(teamList => ({
+      teams: teamList,
+      fixtures: generateRoundRobinFixtures(teamList),
+      currentRound: 0,
+      table: initializeLeagueTable(teamList)
+    }));
+  });
+
+  return state;
+}
+
+function buildLeagueResultsFromState(state) {
+  const results = {};
+  if (!state || !state.regions) return results;
+
+  Object.entries(state.regions).forEach(([region, tiers]) => {
+    results[region] = tiers.map(tierState => {
+      const sorted = Object.values(tierState.table).sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        const diffA = a.spFor - a.spAgainst;
+        const diffB = b.spFor - b.spAgainst;
+        return diffB - diffA;
+      });
+      return { table: sorted };
+    });
+  });
+
+  return results;
+}
+
+function runNextLeagueDay(state) {
+  const lines = [`Day ${GLOBAL_CURRENT_DAY}: Domestic Leagues`];
+  let anyMatches = false;
+
+  Object.entries(state.regions).forEach(([region, tiers]) => {
+    tiers.forEach((tierState, tierIndex) => {
+      if (!tierState.fixtures || tierState.currentRound >= tierState.fixtures.length) return;
+      anyMatches = true;
+
+      lines.push(` Region ${region} - Tier ${tierIndex + 1} (Round ${tierState.currentRound + 1})`);
+      tierState.fixtures[tierState.currentRound].forEach(([teamA, teamB]) => {
+        const result = simulateLeagueMatch(teamA, teamB);
+        applyMatchToTable(result, teamA, teamB, tierState.table);
+
+        const winnerName =
+          result.winner === "D"
+            ? "Draw"
+            : (result.winner === "A" ? teamA.name : teamB.name);
+
+        const line = result.winner === "D"
+          ? `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (Draw)`
+          : `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (${winnerName})`;
+        lines.push(`  • ${line}`);
+      });
+
+      tierState.currentRound += 1;
+      tierState.teams.forEach(t => recoverFatigueBetweenMatches(t));
+    });
+  });
+
+  state.completed = Object.values(state.regions).every(tiers =>
+    tiers.every(tierState => !tierState.fixtures || tierState.currentRound >= tierState.fixtures.length)
+  );
+
+  return { lines, anyMatches };
+}
+
+function ensureMCLSeasonState() {
+  if (GLOBAL_MCL_SIM_STATE && !GLOBAL_MCL_SIM_STATE.completed) return;
+
+  const domesticOrdering = buildDomesticOrderingFromResults();
+  GLOBAL_MCL_SIM_STATE = createMCLSeasonState({
+    seasonNumber: GLOBAL_MCL_SEASON,
+    teams: GLOBAL_TEAMS,
+    eliteTeams: GLOBAL_ELITE_TEAMS,
+    coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
+    domesticStandings: domesticOrdering
+  });
+}
+
+function createMCLSeasonState({ seasonNumber, teams, eliteTeams, coefficientHistory, domesticStandings }) {
+  const slots = computeMCLSlotsForSeason(coefficientHistory, seasonNumber);
+  const qualifiers = pickQualifiersByRegion(teams, slots, domesticStandings);
+
+  const ledConferenceTeams = eliteTeams.map(cloneTournamentTeam);
+  const continentalTeams = qualifiers.map(cloneTournamentTeam);
+
+  const regionPoints = initializeRegionPoints();
+  const teamCounts = { ...initializeRegionPoints() };
+  ledConferenceTeams.forEach(t => teamCounts[t.region] = (teamCounts[t.region] || 0) + 1);
+  continentalTeams.forEach(t => teamCounts[t.region] = (teamCounts[t.region] || 0) + 1);
+
+  return {
+    seasonNumber,
+    slotsUsed: slots,
+    led: {
+      teams: ledConferenceTeams,
+      fixtures: generateRoundRobinFixtures(ledConferenceTeams),
+      currentRound: 0,
+      table: initializeConferenceTable(ledConferenceTeams),
+      log: []
+    },
+    continental: {
+      teams: continentalTeams,
+      fixtures: generateRoundRobinFixtures(continentalTeams),
+      currentRound: 0,
+      table: initializeConferenceTable(continentalTeams),
+      log: []
+    },
+    wildcard: null,
+    semifinals: null,
+    grandFinal: null,
+    stage: "conferences",
+    regionPoints,
+    teamCounts,
+    coefficientHistory,
+    nextSeasonSlots: null,
+    completed: false
+  };
+}
+
+function getConferenceTable(state) {
+  return sortConferenceTable(state.table);
+}
+
+function simulateMCLConferenceRound(state) {
+  const lines = [`Day ${GLOBAL_CURRENT_DAY}: MCL Conference Round ${state.led.currentRound + 1}`];
+
+  const runRound = (confState, label) => {
+    if (confState.currentRound >= confState.fixtures.length) return;
+    lines.push(` ${label}`);
+    confState.fixtures[confState.currentRound].forEach(([teamA, teamB]) => {
+      const result = playBo2Match(teamA, teamB);
+      recordConferenceResult(result, teamA, teamB, confState.table, state.regionPoints);
+
+      const desc = result.winner === "D"
+        ? `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (Draw)`
+        : `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (${result.winner === "A" ? teamA.name : teamB.name} win)`;
+      lines.push(`  • ${desc}`);
+      confState.log.push(desc);
+    });
+    confState.currentRound += 1;
+    confState.teams.forEach(team => recoverFatigueBetweenMatches(team));
+  };
+
+  runRound(state.led, "LED Conference");
+  runRound(state.continental, "Continental Conference");
+
+  const ledDone = state.led.currentRound >= state.led.fixtures.length;
+  const continentalDone = state.continental.currentRound >= state.continental.fixtures.length;
+
+  if (ledDone && continentalDone) {
+    lines.push(" Conferences completed. Moving to Wildcards.");
+    state.stage = "wildcards";
+    state.led.tableSorted = getConferenceTable(state.led);
+    state.continental.tableSorted = getConferenceTable(state.continental);
+    awardBonusForTopThree(state.led.tableSorted, state.regionPoints);
+    awardBonusForTopThree(state.continental.tableSorted, state.regionPoints);
+    state.led.teams.forEach(t => recoverFatigueBetweenMatches(t));
+    state.continental.teams.forEach(t => recoverFatigueBetweenMatches(t));
+  }
+
+  return lines;
+}
+
+function simulateMCLWildcards(state) {
+  const lines = [`Day ${GLOBAL_CURRENT_DAY}: MCL Wildcards`];
+  const led2 = state.led.tableSorted[1].team;
+  const led3 = state.led.tableSorted[2].team;
+  const cont2 = state.continental.tableSorted[1].team;
+  const cont3 = state.continental.tableSorted[2].team;
+
+  const wildcardLed = playBo3Series(led2, led3);
+  awardMatchOutcomePoints(wildcardLed, led2, led3, state.regionPoints);
+  const ledWildcardWinner = wildcardLed.winner === "A" ? led2 : led3;
+
+  const wildcardContinental = playBo3Series(cont2, cont3);
+  awardMatchOutcomePoints(wildcardContinental, cont2, cont3, state.regionPoints);
+  const continentalWildcardWinner = wildcardContinental.winner === "A" ? cont2 : cont3;
+
+  state.wildcard = {
+    led: { series: wildcardLed, winner: ledWildcardWinner },
+    continental: { series: wildcardContinental, winner: continentalWildcardWinner }
+  };
+
+  state.stage = "semifinals";
+  lines.push(formatSeriesLine(wildcardLed, led2, led3));
+  lines.push(formatSeriesLine(wildcardContinental, cont2, cont3));
+  return lines;
+}
+
+function simulateMCLSemifinals(state) {
+  const lines = [`Day ${GLOBAL_CURRENT_DAY}: MCL Semifinals`];
+
+  const ledChampion = state.led.tableSorted[0].team;
+  const contChampion = state.continental.tableSorted[0].team;
+  const ledWildcardWinner = state.wildcard.led.winner;
+  const continentalWildcardWinner = state.wildcard.continental.winner;
+
+  const semifinalists = [ledChampion, contChampion, ledWildcardWinner, continentalWildcardWinner];
+  semifinalists.forEach(team => state.regionPoints[team.region] += 2);
+
+  const semifinal1 = playBo3Series(ledChampion, continentalWildcardWinner);
+  awardMatchOutcomePoints(semifinal1, ledChampion, continentalWildcardWinner, state.regionPoints);
+  const semi1Winner = semifinal1.winner === "A" ? ledChampion : continentalWildcardWinner;
+
+  const semifinal2 = playBo3Series(contChampion, ledWildcardWinner);
+  awardMatchOutcomePoints(semifinal2, contChampion, ledWildcardWinner, state.regionPoints);
+  const semi2Winner = semifinal2.winner === "A" ? contChampion : ledWildcardWinner;
+
+  state.regionPoints[semi1Winner.region] += 3;
+  state.regionPoints[semi2Winner.region] += 3;
+
+  state.semifinals = {
+    semifinal1: { series: semifinal1, pairing: [ledChampion, continentalWildcardWinner] },
+    semifinal2: { series: semifinal2, pairing: [contChampion, ledWildcardWinner] },
+    finalists: [semi1Winner, semi2Winner]
+  };
+
+  state.stage = "grandFinal";
+  lines.push(formatSeriesLine(semifinal1, ledChampion, continentalWildcardWinner));
+  lines.push(formatSeriesLine(semifinal2, contChampion, ledWildcardWinner));
+  return lines;
+}
+
+function simulateMCLGrandFinal(state) {
+  const lines = [`Day ${GLOBAL_CURRENT_DAY}: MCL Grand Final`];
+
+  const [finalA, finalB] = state.semifinals.finalists;
+  const grandFinal = playBo3Series(finalA, finalB);
+  awardMatchOutcomePoints(grandFinal, finalA, finalB, state.regionPoints);
+  const champion = grandFinal.winner === "A" ? finalA : finalB;
+  state.regionPoints[champion.region] += 5;
+
+  state.grandFinal = { series: grandFinal, champion };
+  state.stage = "complete";
+
+  const seasonalScores = calculateSeasonalScores(state.regionPoints, state.teamCounts);
+  const updatedHistory = updateCoefficientHistory(state.coefficientHistory, seasonalScores);
+  const nextSeasonSlots = computeMCLSlotsForSeason(updatedHistory, state.seasonNumber + 1);
+
+  state.completed = true;
+  state.nextSeasonSlots = nextSeasonSlots;
+  state.coefficientHistory = updatedHistory;
+
+  lines.push(formatSeriesLine(grandFinal, finalA, finalB));
+  lines.push(`Champion: ${champion.name}`);
+  return lines;
+}
+
+function buildMCLResultFromState(state) {
+  return {
+    seasonNumber: state.seasonNumber,
+    slotsUsed: state.slotsUsed,
+    ledConference: { table: state.led.tableSorted, log: state.led.log },
+    continentalConference: { table: state.continental.tableSorted, log: state.continental.log },
+    wildcard: state.wildcard,
+    semifinals: state.semifinals,
+    grandFinal: state.grandFinal,
+    regionPoints: state.regionPoints,
+    seasonalScores: calculateSeasonalScores(state.regionPoints, state.teamCounts),
+    coefficientHistory: state.coefficientHistory,
+    nextSeasonSlots: state.nextSeasonSlots
+  };
+}
+
+function simulateMCLDay() {
+  ensureMCLSeasonState();
+  if (!GLOBAL_MCL_SIM_STATE) return;
+
+  const state = GLOBAL_MCL_SIM_STATE;
+  let lines = [];
+
+  if (state.stage === "conferences") {
+    lines = simulateMCLConferenceRound(state);
+  } else if (state.stage === "wildcards") {
+    lines = simulateMCLWildcards(state);
+  } else if (state.stage === "semifinals") {
+    lines = simulateMCLSemifinals(state);
+  } else if (state.stage === "grandFinal") {
+    lines = simulateMCLGrandFinal(state);
+  }
+
+  if (state.stage === "complete" && state.completed) {
+    GLOBAL_MCL_COEFFICIENTS = state.coefficientHistory;
+    GLOBAL_MCL_SEASON += 1;
+    GLOBAL_MCL_LAST_RESULT = buildMCLResultFromState(state);
+    renderMCLResult(GLOBAL_MCL_LAST_RESULT);
+  }
+
+  appendToLeagueLog(lines);
 }
 
 function buildDomesticOrderingFromResults() {
@@ -710,6 +1022,44 @@ function simulateAllLeagues() {
   renderCurrentLeagueTable();
 }
 
+function shouldRunLeagueDay(leagueReady, mclReady) {
+  if (leagueReady && !mclReady) return true;
+  if (!leagueReady && mclReady) return false;
+  return GLOBAL_CURRENT_DAY % 2 === 1;
+}
+
+function advanceDay() {
+  if (!GLOBAL_LEAGUES) {
+    appendToLeagueLog(["Leagues not initialized yet. Start a new game first."]);
+    return;
+  }
+
+  const leagueReady = GLOBAL_LEAGUE_SIM_STATE && !GLOBAL_LEAGUE_SIM_STATE.completed;
+  const mclReady = GLOBAL_MCL_SIM_STATE && !GLOBAL_MCL_SIM_STATE.completed;
+
+  if (!leagueReady && !mclReady) {
+    appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: No competitions left to simulate.`]);
+    return;
+  }
+
+  const runLeague = shouldRunLeagueDay(leagueReady, mclReady);
+
+  if (runLeague) {
+    const { lines, anyMatches } = runNextLeagueDay(GLOBAL_LEAGUE_SIM_STATE);
+    GLOBAL_LEAGUE_RESULTS = buildLeagueResultsFromState(GLOBAL_LEAGUE_SIM_STATE);
+    renderCurrentLeagueTable();
+    appendToLeagueLog(lines);
+
+    if (!anyMatches && !mclReady) {
+      appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: Domestic leagues already complete.`]);
+    }
+  } else {
+    simulateMCLDay();
+  }
+
+  GLOBAL_CURRENT_DAY += 1;
+}
+
 function runTestMatchAndShowLog() {
   if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length < 2) {
     renderMatchLog(["Not enough teams loaded to run a match."]);
@@ -753,6 +1103,10 @@ window.onload = () => {
     const btnLeagues = document.getElementById("run-leagues");
     if (btnLeagues) {
       btnLeagues.addEventListener("click", simulateAllLeagues);
+    }
+    const btnAdvanceDay = document.getElementById("advance-day");
+    if (btnAdvanceDay) {
+      btnAdvanceDay.addEventListener("click", advanceDay);
     }
     const btnMCL = document.getElementById("run-mcl");
     if (btnMCL) {
