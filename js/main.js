@@ -36,17 +36,14 @@ async function startNewGame() {
   GLOBAL_DAY_LOG_LINES = [];
   GLOBAL_LEAGUE_RESULTS = buildLeagueResultsFromState(GLOBAL_LEAGUE_SIM_STATE);
 
+  renderLeagueLog([]);
+
   console.log("Teams:", GLOBAL_TEAMS);
   console.log("LED Elite Teams:", GLOBAL_ELITE_TEAMS);
   console.log("Regional Leagues:", GLOBAL_LEAGUES);
 
   initLeagueSelectors();
   renderMCLPlaceholder();
-}
-
-function renderMatchLog(logLines) {
-  const pre = document.getElementById("match-log");
-  pre.textContent = logLines.join("\n");
 }
 
 function renderMCLPlaceholder() {
@@ -135,10 +132,118 @@ function updateTierSelector() {
   }
 }
 
+function escapeHtml(text) {
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;" };
+  return text.replace(/[&<>]/g, m => map[m]);
+}
+
+function highlightLeagueLine(line) {
+  let html = escapeHtml(line);
+
+  const replacements = [
+    { regex: /(===.*?===)/g, cls: "token-heading" },
+    { regex: /(Region:\s*[^:]+)/g, cls: "token-keyword" },
+    { regex: /(Tier\s+\d+)/g, cls: "token-tier" },
+    { regex: /(Champion|Result|wins)/gi, cls: "token-accent" },
+    { regex: /(\b\d+\b)/g, cls: "token-number" }
+  ];
+
+  replacements.forEach(({ regex, cls }) => {
+    html = html.replace(regex, `<span class="${cls}">$1</span>`);
+  });
+
+  return html;
+}
+
+function createCodeLine(text) {
+  const line = document.createElement("div");
+  line.className = "code-line";
+  line.innerHTML = highlightLeagueLine(text);
+  return line;
+}
+
+function buildLeagueLogTree(lines) {
+  const tree = { intro: [], regions: [] };
+  let currentRegion = null;
+  let currentTier = null;
+
+  lines.forEach(line => {
+    if (/^\s*$/.test(line)) return;
+
+    if (line.startsWith("Region:")) {
+      if (currentRegion) tree.regions.push(currentRegion);
+      currentRegion = { title: line.trim(), tiers: [], extra: [] };
+      currentTier = null;
+      return;
+    }
+
+    if (/^\s*Tier\s+\d+/.test(line) && currentRegion) {
+      if (currentTier) currentRegion.tiers.push(currentTier);
+      currentTier = { title: line.trim(), lines: [] };
+      return;
+    }
+
+    if (currentTier) {
+      currentTier.lines.push(line);
+    } else if (currentRegion) {
+      currentRegion.extra.push(line);
+    } else {
+      tree.intro.push(line);
+    }
+  });
+
+  if (currentTier && currentRegion) currentRegion.tiers.push(currentTier);
+  if (currentRegion) tree.regions.push(currentRegion);
+  return tree;
+}
+
+function renderRegionBlock(region) {
+  const details = document.createElement("details");
+  details.className = "code-fold";
+  details.open = true;
+
+  const summary = document.createElement("summary");
+  summary.innerHTML = highlightLeagueLine(region.title);
+  details.appendChild(summary);
+
+  region.extra.forEach(line => {
+    details.appendChild(createCodeLine(line));
+  });
+
+  region.tiers.forEach(tier => {
+    const tierDetails = document.createElement("details");
+    tierDetails.className = "code-fold";
+    tierDetails.open = true;
+
+    const tierSummary = document.createElement("summary");
+    tierSummary.innerHTML = highlightLeagueLine(tier.title);
+    tierDetails.appendChild(tierSummary);
+
+    tier.lines.forEach(line => tierDetails.appendChild(createCodeLine(line)));
+    details.appendChild(tierDetails);
+  });
+
+  return details;
+}
+
 function renderLeagueLog(lines) {
-  const pre = document.getElementById("league-log");
-  if (!pre) return;
-  pre.textContent = lines.join("\n");
+  const viewer = document.getElementById("league-log-viewer");
+  if (!viewer) return;
+
+  viewer.innerHTML = "";
+
+  if (!lines || lines.length === 0) {
+    viewer.appendChild(createCodeLine("(no league simulations run yet)"));
+    return;
+  }
+
+  const tree = buildLeagueLogTree(lines);
+  const fragment = document.createDocumentFragment();
+
+  tree.intro.forEach(line => fragment.appendChild(createCodeLine(line)));
+  tree.regions.forEach(region => fragment.appendChild(renderRegionBlock(region)));
+
+  viewer.appendChild(fragment);
 }
 
 function appendToLeagueLog(lines) {
@@ -678,6 +783,12 @@ function simulateMCLAndRender() {
   renderMCLResult(result);
 }
 
+function simulateMCLSeasonButtonHandler() {
+  simulateAllLeagues();
+  renderCurrentLeagueTable();
+  simulateMCLAndRender();
+}
+
 function simulateCurrentMCLSeason(domesticStandings = null) {
   if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 || !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
     console.warn("MCL cannot run until teams are loaded.");
@@ -1014,6 +1125,7 @@ function simulateAllLeagues() {
 
   // store for the League Tables UI
   GLOBAL_LEAGUE_RESULTS = results;
+  GLOBAL_DAY_LOG_LINES = [...lines];
 
   // show text summary in the log
   renderLeagueLog(lines);
@@ -1060,46 +1172,8 @@ function advanceDay() {
   GLOBAL_CURRENT_DAY += 1;
 }
 
-function runTestMatchAndShowLog() {
-  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length < 2) {
-    renderMatchLog(["Not enough teams loaded to run a match."]);
-    return;
-  }
-
-  const teamA = GLOBAL_TEAMS[0];
-  const teamB = GLOBAL_TEAMS[1];
-
-  const lineupA = pickLineup(teamA);
-  const lineupB = pickLineup(teamB);
-
-  if (lineupA.length < 3 || lineupB.length < 3) {
-    renderMatchLog(["One of the teams cannot field a full 1/1/1 lineup."]);
-    return;
-  }
-
-  markPlayed(lineupA);
-  markPlayed(lineupB);
-
-  const result = runMatch(lineupA, lineupB);
-
-  console.log(`Match result: Team ${result.winner} wins ${result.winsA}-${result.winsB}`);
-  renderMatchLog(result.log);
-
-  applyMatchFatigue(teamA);
-  applyMatchFatigue(teamB);
-  progressInjuries(teamA);
-  progressInjuries(teamB);
-  recoverFatigueBetweenMatches(teamA);
-  recoverFatigueBetweenMatches(teamB);
-}
-
 window.onload = () => {
   startNewGame().then(() => {
-    const btnMatch = document.getElementById("run-test-match");
-    if (btnMatch) {
-      btnMatch.addEventListener("click", runTestMatchAndShowLog);
-    }
-	
     const btnLeagues = document.getElementById("run-leagues");
     if (btnLeagues) {
       btnLeagues.addEventListener("click", simulateAllLeagues);
@@ -1108,9 +1182,9 @@ window.onload = () => {
     if (btnAdvanceDay) {
       btnAdvanceDay.addEventListener("click", advanceDay);
     }
-    const btnMCL = document.getElementById("run-mcl");
+    const btnMCL = document.getElementById("simulate-mcl-season");
     if (btnMCL) {
-      btnMCL.addEventListener("click", simulateMCLAndRender);
+      btnMCL.addEventListener("click", simulateMCLSeasonButtonHandler);
     }
     const btnMCLSecondary = document.getElementById("run-mcl-secondary");
     if (btnMCLSecondary) {
