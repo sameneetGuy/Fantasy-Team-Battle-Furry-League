@@ -36,35 +36,14 @@ async function startNewGame() {
   GLOBAL_DAY_LOG_LINES = [];
   GLOBAL_LEAGUE_RESULTS = buildLeagueResultsFromState(GLOBAL_LEAGUE_SIM_STATE);
 
+  renderLeagueLog([]);
+
   console.log("Teams:", GLOBAL_TEAMS);
   console.log("LED Elite Teams:", GLOBAL_ELITE_TEAMS);
   console.log("Regional Leagues:", GLOBAL_LEAGUES);
 
   initLeagueSelectors();
   renderMCLPlaceholder();
-}
-
-function renderMatchLog(logLines) {
-  const pre = document.getElementById("match-log");
-  pre.textContent = logLines.join("\n");
-}
-
-function renderMCLPlaceholder() {
-  const seasonLabel = document.getElementById("mcl-season-label");
-  const championLabel = document.getElementById("mcl-champion-label");
-  const slotSummary = document.getElementById("mcl-slot-summary");
-  const conferences = document.getElementById("mcl-conferences");
-  const playoffs = document.getElementById("mcl-playoffs");
-  const coeffs = document.getElementById("mcl-coefficients");
-
-  if (seasonLabel) seasonLabel.textContent = "No MCL season simulated yet.";
-  if (championLabel) championLabel.textContent = "Champion: —";
-  if (slotSummary) slotSummary.innerHTML = "<span class=\"pill subtle\">Season 1 allocation defaults to 4/3/3/2.</span>";
-
-  const placeholder = "<p class=\"muted-compact\">Run an MCL season to view standings and playoff results.</p>";
-  if (conferences) conferences.innerHTML = placeholder;
-  if (playoffs) playoffs.innerHTML = placeholder;
-  if (coeffs) coeffs.innerHTML = placeholder;
 }
 
 function renderMCLPlaceholder() {
@@ -135,10 +114,118 @@ function updateTierSelector() {
   }
 }
 
+function escapeHtml(text) {
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;" };
+  return text.replace(/[&<>]/g, m => map[m]);
+}
+
+function highlightLeagueLine(line) {
+  let html = escapeHtml(line);
+
+  const replacements = [
+    { regex: /(===.*?===)/g, cls: "token-heading" },
+    { regex: /(Region:\s*[^:]+)/g, cls: "token-keyword" },
+    { regex: /(Tier\s+\d+)/g, cls: "token-tier" },
+    { regex: /(Champion|Result|wins)/gi, cls: "token-accent" },
+    { regex: /(\b\d+\b)/g, cls: "token-number" }
+  ];
+
+  replacements.forEach(({ regex, cls }) => {
+    html = html.replace(regex, `<span class="${cls}">$1</span>`);
+  });
+
+  return html;
+}
+
+function createCodeLine(text) {
+  const line = document.createElement("div");
+  line.className = "code-line";
+  line.innerHTML = highlightLeagueLine(text);
+  return line;
+}
+
+function buildLeagueLogTree(lines) {
+  const tree = { intro: [], regions: [] };
+  let currentRegion = null;
+  let currentTier = null;
+
+  lines.forEach(line => {
+    if (/^\s*$/.test(line)) return;
+
+    if (line.startsWith("Region:")) {
+      if (currentRegion) tree.regions.push(currentRegion);
+      currentRegion = { title: line.trim(), tiers: [], extra: [] };
+      currentTier = null;
+      return;
+    }
+
+    if (/^\s*Tier\s+\d+/.test(line) && currentRegion) {
+      if (currentTier) currentRegion.tiers.push(currentTier);
+      currentTier = { title: line.trim(), lines: [] };
+      return;
+    }
+
+    if (currentTier) {
+      currentTier.lines.push(line);
+    } else if (currentRegion) {
+      currentRegion.extra.push(line);
+    } else {
+      tree.intro.push(line);
+    }
+  });
+
+  if (currentTier && currentRegion) currentRegion.tiers.push(currentTier);
+  if (currentRegion) tree.regions.push(currentRegion);
+  return tree;
+}
+
+function renderRegionBlock(region) {
+  const details = document.createElement("details");
+  details.className = "code-fold";
+  details.open = true;
+
+  const summary = document.createElement("summary");
+  summary.innerHTML = highlightLeagueLine(region.title);
+  details.appendChild(summary);
+
+  region.extra.forEach(line => {
+    details.appendChild(createCodeLine(line));
+  });
+
+  region.tiers.forEach(tier => {
+    const tierDetails = document.createElement("details");
+    tierDetails.className = "code-fold";
+    tierDetails.open = true;
+
+    const tierSummary = document.createElement("summary");
+    tierSummary.innerHTML = highlightLeagueLine(tier.title);
+    tierDetails.appendChild(tierSummary);
+
+    tier.lines.forEach(line => tierDetails.appendChild(createCodeLine(line)));
+    details.appendChild(tierDetails);
+  });
+
+  return details;
+}
+
 function renderLeagueLog(lines) {
-  const pre = document.getElementById("league-log");
-  if (!pre) return;
-  pre.textContent = lines.join("\n");
+  const viewer = document.getElementById("league-log-viewer");
+  if (!viewer) return;
+
+  viewer.innerHTML = "";
+
+  if (!lines || lines.length === 0) {
+    viewer.appendChild(createCodeLine("(no league simulations run yet)"));
+    return;
+  }
+
+  const tree = buildLeagueLogTree(lines);
+  const fragment = document.createDocumentFragment();
+
+  tree.intro.forEach(line => fragment.appendChild(createCodeLine(line)));
+  tree.regions.forEach(region => fragment.appendChild(renderRegionBlock(region)));
+
+  viewer.appendChild(fragment);
 }
 
 function appendToLeagueLog(lines) {
@@ -673,243 +760,37 @@ function buildDomesticOrderingFromResults() {
 function simulateMCLAndRender() {
   const domesticOrdering = buildDomesticOrderingFromResults();
   const result = simulateCurrentMCLSeason(domesticOrdering);
-  if (!result) return;
+  if (!result) return null;
   GLOBAL_MCL_LAST_RESULT = result;
   renderMCLResult(result);
-}
-
-function simulateCurrentMCLSeason(domesticStandings = null) {
-  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 || !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
-    console.warn("MCL cannot run until teams are loaded.");
-    return null;
-  }
-
-  const result = simulateMCLSeason({
-    seasonNumber: GLOBAL_MCL_SEASON,
-    teams: GLOBAL_TEAMS,
-    eliteTeams: GLOBAL_ELITE_TEAMS,
-    coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
-    domesticStandings
-  });
-
-  GLOBAL_MCL_COEFFICIENTS = result.coefficientHistory;
-  GLOBAL_MCL_SEASON += 1;
-
-  console.log(`MCL Season ${result.seasonNumber} complete. Champion: ${result.grandFinal.champion.name}`);
-  console.log("Next season slots:", result.nextSeasonSlots);
   return result;
 }
 
-function formatRegion(region) {
-  return region.replace(/([a-z])([A-Z])/g, "$1 $2");
-}
+function simulateMCLSeasonButtonHandler() {
+  const leagueLines = simulateAllLeagues();
+  renderCurrentLeagueTable();
 
-function describeSlots(slots) {
-  return MCL_REGIONAL_POOL
-    .map(region => `${formatRegion(region)} ${slots[region] || 0}`)
-    .join(" • ");
-}
-
-function buildConferenceTableElement(title, tableRows) {
-  const wrapper = document.createElement("div");
-  const table = document.createElement("table");
-  table.className = "mini-table";
-
-  const caption = document.createElement("caption");
-  caption.textContent = title;
-  table.appendChild(caption);
-
-  const thead = document.createElement("thead");
-  thead.innerHTML = `
-    <tr>
-      <th>#</th>
-      <th>Team</th>
-      <th>Pts</th>
-      <th>SP For</th>
-      <th>SP Against</th>
-      <th>SP Diff</th>
-    </tr>
-  `;
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  tableRows.forEach((row, idx) => {
-    const diff = row.spFor - row.spAgainst;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td>${row.team.name}</td>
-      <td>${row.points}</td>
-      <td>${row.spFor}</td>
-      <td>${row.spAgainst}</td>
-      <td>${diff}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  table.appendChild(tbody);
-  wrapper.appendChild(table);
-  return wrapper;
-}
-
-function formatSeriesLine(series, teamA, teamB) {
-  const winnerName = series.winner === "A" ? teamA.name : teamB.name;
-  return `${teamA.name} ${series.winsA}-${series.winsB} ${teamB.name} (${winnerName})`;
-}
-
-function addBracketBox(container, title, lines) {
-  const box = document.createElement("div");
-  box.className = "bracket-box";
-
-  const heading = document.createElement("h4");
-  heading.textContent = title;
-  box.appendChild(heading);
-
-  lines.forEach(text => {
-    const p = document.createElement("div");
-    p.className = "bracket-line";
-    p.textContent = text;
-    box.appendChild(p);
-  });
-
-  container.appendChild(box);
-}
-
-function renderMCLPlayoffs(result) {
-  const playoffs = document.getElementById("mcl-playoffs");
-  if (!playoffs) return;
-  playoffs.innerHTML = "";
-
-  const led2 = result.ledConference.table[1].team;
-  const led3 = result.ledConference.table[2].team;
-  const cont2 = result.continentalConference.table[1].team;
-  const cont3 = result.continentalConference.table[2].team;
-
-  addBracketBox(playoffs, "Wildcards", [
-    formatSeriesLine(result.wildcard.led.series, led2, led3),
-    formatSeriesLine(result.wildcard.continental.series, cont2, cont3)
-  ]);
-
-  const [semi1A, semi1B] = result.semifinals.semifinal1.pairing;
-  const [semi2A, semi2B] = result.semifinals.semifinal2.pairing;
-
-  addBracketBox(playoffs, "Semifinals", [
-    formatSeriesLine(result.semifinals.semifinal1.series, semi1A, semi1B),
-    formatSeriesLine(result.semifinals.semifinal2.series, semi2A, semi2B)
-  ]);
-
-  const [finalA, finalB] = result.semifinals.finalists;
-  addBracketBox(playoffs, "Grand Final", [
-    formatSeriesLine(result.grandFinal.series, finalA, finalB),
-    `Champion: ${result.grandFinal.champion.name}`
-  ]);
-}
-
-function renderMCLCoefficients(result) {
-  const coeffs = document.getElementById("mcl-coefficients");
-  if (!coeffs) return;
-  coeffs.innerHTML = "";
-
-  const table = document.createElement("table");
-  table.className = "mini-table";
-
-  const caption = document.createElement("caption");
-  caption.textContent = "Regional Coefficients";
-  table.appendChild(caption);
-
-  const thead = document.createElement("thead");
-  thead.innerHTML = `
-    <tr>
-      <th>Region</th>
-      <th>Season Score</th>
-      <th>Last 3 Seasons</th>
-      <th>Next Slots</th>
-    </tr>
-  `;
-  table.appendChild(thead);
-
-  const tbody = document.createElement("tbody");
-  [MCL_LED_REGION, ...MCL_REGIONAL_POOL].forEach(region => {
-    const tr = document.createElement("tr");
-    const seasonal = (result.seasonalScores[region] || 0).toFixed(2);
-    const history = result.coefficientHistory[region] || [];
-    const historyText = history.length > 0 ? history.join(", ") : "-";
-    const nextSlots = region === MCL_LED_REGION
-      ? "12 (permanent)"
-      : `${result.nextSeasonSlots[region] || 0}`;
-
-    tr.innerHTML = `
-      <td>${formatRegion(region)}</td>
-      <td>${seasonal}</td>
-      <td>${historyText}</td>
-      <td>${nextSlots}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  table.appendChild(tbody);
-  coeffs.appendChild(table);
-}
-
-function renderMCLConferences(result) {
-  const conferences = document.getElementById("mcl-conferences");
-  if (!conferences) return;
-  conferences.innerHTML = "";
-
-  const ledTable = buildConferenceTableElement("LED Conference", result.ledConference.table);
-  const continentalTable = buildConferenceTableElement("Continental Conference", result.continentalConference.table);
-
-  conferences.appendChild(ledTable);
-  conferences.appendChild(continentalTable);
-}
-
-function renderMCLSlots(result) {
-  const slotSummary = document.getElementById("mcl-slot-summary");
-  if (!slotSummary) return;
-  slotSummary.innerHTML = "";
-
-  const current = document.createElement("span");
-  current.className = "pill";
-  current.textContent = `Season ${result.seasonNumber} slots: ${describeSlots(result.slotsUsed)}`;
-
-  const next = document.createElement("span");
-  next.className = "pill subtle";
-  next.textContent = `Next season preview: ${describeSlots(result.nextSeasonSlots)}`;
-
-  slotSummary.appendChild(current);
-  slotSummary.appendChild(next);
-}
-
-function renderMCLResult(result) {
-  const seasonLabel = document.getElementById("mcl-season-label");
-  const championLabel = document.getElementById("mcl-champion-label");
-
-  if (seasonLabel) seasonLabel.textContent = `MCL Season ${result.seasonNumber}`;
-  if (championLabel) championLabel.textContent = `Champion: ${result.grandFinal.champion.name}`;
-
-  renderMCLSlots(result);
-  renderMCLConferences(result);
-  renderMCLPlayoffs(result);
-  renderMCLCoefficients(result);
-}
-
-function buildDomesticOrderingFromResults() {
-  if (!GLOBAL_LEAGUE_RESULTS) return null;
-  const ordering = {};
-  Object.entries(GLOBAL_LEAGUE_RESULTS).forEach(([region, tiers]) => {
-    if (tiers && tiers[0] && tiers[0].table) {
-      ordering[region] = tiers[0].table.map(row => row.team.id);
-    }
-  });
-  return Object.keys(ordering).length > 0 ? ordering : null;
-}
-
-function simulateMCLAndRender() {
-  const domesticOrdering = buildDomesticOrderingFromResults();
-  const result = simulateCurrentMCLSeason(domesticOrdering);
+  const result = simulateMCLAndRender();
   if (!result) return;
-  GLOBAL_MCL_LAST_RESULT = result;
-  renderMCLResult(result);
+
+  const ledLeader = result.ledConference.table[0];
+  const continentalLeader = result.continentalConference.table[0];
+
+  const mclLines = [
+    "=== Major Continental League ===",
+    `Season ${result.seasonNumber} Champion: ${result.grandFinal.champion.name}`,
+    `LED Conference winner: ${ledLeader.team.name} (${ledLeader.points} pts)`,
+    `Continental Conference winner: ${continentalLeader.team.name} (${continentalLeader.points} pts)`,
+    formatSeriesLine(result.wildcard.led.series, result.ledConference.table[1].team, result.ledConference.table[2].team),
+    formatSeriesLine(result.wildcard.continental.series, result.continentalConference.table[1].team, result.continentalConference.table[2].team),
+    formatSeriesLine(result.grandFinal.series, result.semifinals.finalists[0], result.semifinals.finalists[1])
+  ];
+
+  if (Array.isArray(leagueLines) && leagueLines.length > 0) {
+    GLOBAL_DAY_LOG_LINES = [...leagueLines];
+  }
+
+  appendToLeagueLog(mclLines);
 }
 
 function renderCurrentLeagueTable() {
@@ -1014,12 +895,15 @@ function simulateAllLeagues() {
 
   // store for the League Tables UI
   GLOBAL_LEAGUE_RESULTS = results;
+  GLOBAL_DAY_LOG_LINES = [...lines];
 
   // show text summary in the log
   renderLeagueLog(lines);
 
   // refresh the League Tables panel using the latest results
   renderCurrentLeagueTable();
+
+  return lines;
 }
 
 function shouldRunLeagueDay(leagueReady, mclReady) {
@@ -1060,46 +944,8 @@ function advanceDay() {
   GLOBAL_CURRENT_DAY += 1;
 }
 
-function runTestMatchAndShowLog() {
-  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length < 2) {
-    renderMatchLog(["Not enough teams loaded to run a match."]);
-    return;
-  }
-
-  const teamA = GLOBAL_TEAMS[0];
-  const teamB = GLOBAL_TEAMS[1];
-
-  const lineupA = pickLineup(teamA);
-  const lineupB = pickLineup(teamB);
-
-  if (lineupA.length < 3 || lineupB.length < 3) {
-    renderMatchLog(["One of the teams cannot field a full 1/1/1 lineup."]);
-    return;
-  }
-
-  markPlayed(lineupA);
-  markPlayed(lineupB);
-
-  const result = runMatch(lineupA, lineupB);
-
-  console.log(`Match result: Team ${result.winner} wins ${result.winsA}-${result.winsB}`);
-  renderMatchLog(result.log);
-
-  applyMatchFatigue(teamA);
-  applyMatchFatigue(teamB);
-  progressInjuries(teamA);
-  progressInjuries(teamB);
-  recoverFatigueBetweenMatches(teamA);
-  recoverFatigueBetweenMatches(teamB);
-}
-
 window.onload = () => {
   startNewGame().then(() => {
-    const btnMatch = document.getElementById("run-test-match");
-    if (btnMatch) {
-      btnMatch.addEventListener("click", runTestMatchAndShowLog);
-    }
-	
     const btnLeagues = document.getElementById("run-leagues");
     if (btnLeagues) {
       btnLeagues.addEventListener("click", simulateAllLeagues);
@@ -1108,15 +954,15 @@ window.onload = () => {
     if (btnAdvanceDay) {
       btnAdvanceDay.addEventListener("click", advanceDay);
     }
-    const btnMCL = document.getElementById("run-mcl");
+    const btnMCL = document.getElementById("simulate-mcl-season");
     if (btnMCL) {
-      btnMCL.addEventListener("click", simulateMCLAndRender);
+      btnMCL.addEventListener("click", simulateMCLSeasonButtonHandler);
     }
     const btnMCLSecondary = document.getElementById("run-mcl-secondary");
     if (btnMCLSecondary) {
       btnMCLSecondary.addEventListener("click", simulateMCLAndRender);
     }
-        initLeagueSelectors();
+    initLeagueSelectors();
     renderCurrentLeagueTable();
     renderMCLPlaceholder();
   });
