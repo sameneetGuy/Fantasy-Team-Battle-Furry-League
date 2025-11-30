@@ -657,8 +657,12 @@ function simulateMCLDay() {
 }
 
 function simulateMCLSeasonButtonHandler() {
+  GLOBAL_MCL_SIM_STATE = { completed: false };
+
   const result = simulateMCLAndRender();
   if (!result) return;
+
+  GLOBAL_MCL_SIM_STATE = { completed: true, result };
 
   const ledLeader = result.ledConference.table[0];
   const continentalLeader = result.continentalConference.table[0];
@@ -780,6 +784,14 @@ function simulateAllLeagues() {
   GLOBAL_LEAGUE_RESULTS = results;
   GLOBAL_DAY_LOG_LINES = [...lines];
 
+  // mark domestic play as finished so day-by-day flow can move into MCL
+  if (GLOBAL_LEAGUE_SIM_STATE) {
+    GLOBAL_LEAGUE_SIM_STATE.completed = true;
+  } else {
+    GLOBAL_LEAGUE_SIM_STATE = { completed: true };
+  }
+  GLOBAL_MCL_SIM_STATE = { completed: false };
+
   // show text summary in the log
   renderLeagueLog(lines);
 
@@ -797,8 +809,12 @@ function shouldRunLeagueDay(leagueReady, mclReady) {
 
 function advanceDay() {
   if (!GLOBAL_LEAGUES) {
-    appendToLeagueLog(["Leagues not initialized yet. Start a new game first."]);
+    appendToLeagueLog(["Leagues not initialized yet. Start a new game first."]); 
     return;
+  }
+
+  if (GLOBAL_LEAGUE_SIM_STATE && GLOBAL_LEAGUE_SIM_STATE.completed && !GLOBAL_MCL_SIM_STATE) {
+    GLOBAL_MCL_SIM_STATE = { completed: false };
   }
 
   const leagueReady = GLOBAL_LEAGUE_SIM_STATE && !GLOBAL_LEAGUE_SIM_STATE.completed;
