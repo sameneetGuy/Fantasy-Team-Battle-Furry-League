@@ -10,6 +10,28 @@ let GLOBAL_MCL_SIM_STATE = null;
 let GLOBAL_CURRENT_DAY = 1;
 let GLOBAL_DAY_LOG_LINES = [];
 
+function buildDomesticOrderingFromResults() {
+  const ordering = {};
+
+  Object.entries(GLOBAL_LEAGUE_RESULTS || {}).forEach(([region, tiers]) => {
+    const orderedIds = [];
+    (tiers || []).forEach(tier => {
+      if (!tier || !tier.table) return;
+      tier.table.forEach(row => orderedIds.push(row.team.id));
+    });
+    ordering[region] = orderedIds;
+  });
+
+  return ordering;
+}
+
+function formatSeriesLine(series, teamA, teamB) {
+  if (!series || !teamA || !teamB) return "";
+
+  const winnerName = series.winner === "A" ? teamA.name : teamB.name;
+  return `${teamA.name} ${series.winsA}-${series.winsB} ${teamB.name} (${winnerName} wins)`;
+}
+
 async function startNewGame() {
   const { teams: teamData, abilities: abilityData, elite: eliteData } = await loadGameData();
 
@@ -46,6 +68,113 @@ async function startNewGame() {
   renderMCLPlaceholder();
 }
 
+function createLeagueSimulationState(leagues) {
+  const state = { regions: {}, completed: false };
+
+  Object.entries(leagues || {}).forEach(([region, tiers]) => {
+    state.regions[region] = (tiers || []).map(teamList => {
+      const fixtures = generateRoundRobinFixtures(teamList);
+      const table = initializeLeagueTable(teamList);
+      return {
+        teams: teamList,
+        fixtures,
+        roundIndex: 0,
+        table,
+        completed: teamList.length < 2
+      };
+    });
+  });
+
+  state.completed = Object.values(state.regions)
+    .flat()
+    .every(t => t.completed);
+
+  return state;
+}
+
+function buildLeagueResultsFromState(state) {
+  const results = {};
+  if (!state || !state.regions) return results;
+
+  Object.entries(state.regions).forEach(([region, tiers]) => {
+    results[region] = tiers.map(tier => {
+      if (!tier || !tier.table) return null;
+
+      const sorted = Object.values(tier.table).sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        const diffA = a.spFor - a.spAgainst;
+        const diffB = b.spFor - b.spAgainst;
+        return diffB - diffA;
+      });
+
+      return { fixtures: tier.fixtures, table: sorted };
+    });
+  });
+
+  return results;
+}
+
+function runNextLeagueDay(state) {
+  const lines = [`Day ${GLOBAL_CURRENT_DAY}: Domestic fixtures`];
+  if (!state || !state.regions) return { lines: ["Leagues not initialized."], anyMatches: false };
+
+  let anyMatches = false;
+
+  Object.entries(state.regions).forEach(([region, tiers]) => {
+    let regionHeaderAdded = false;
+
+    tiers.forEach((tierState, idx) => {
+      if (tierState.completed) return;
+
+      const { fixtures, roundIndex } = tierState;
+      if (roundIndex >= fixtures.length) {
+        tierState.completed = true;
+        return;
+      }
+
+      const matches = fixtures[roundIndex];
+      if (!matches || matches.length === 0) {
+        tierState.roundIndex += 1;
+        return;
+      }
+
+      anyMatches = true;
+      if (!regionHeaderAdded) {
+        lines.push(`Region: ${formatRegion(region)}`);
+        regionHeaderAdded = true;
+      }
+
+      lines.push(` Tier ${idx + 1}, Round ${roundIndex + 1}:`);
+
+      matches.forEach(([teamA, teamB]) => {
+        const result = simulateLeagueMatch(teamA, teamB);
+        applyMatchToTable(result, teamA, teamB, tierState.table);
+
+        const winnerName = result.winner === "D"
+          ? "Draw"
+          : result.winner === "A"
+            ? teamA.name
+            : teamB.name;
+
+        lines.push(`  ${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (${winnerName})`);
+      });
+
+      tierState.teams.forEach(team => recoverFatigueBetweenMatches(team));
+
+      tierState.roundIndex += 1;
+      if (tierState.roundIndex >= fixtures.length) {
+        tierState.completed = true;
+      }
+    });
+  });
+
+  state.completed = Object.values(state.regions)
+    .flat()
+    .every(t => t.completed);
+
+  return { lines, anyMatches };
+}
+
 function renderMCLPlaceholder() {
   const seasonLabel = document.getElementById("mcl-season-label");
   const championLabel = document.getElementById("mcl-champion-label");
@@ -62,6 +191,125 @@ function renderMCLPlaceholder() {
   if (conferences) conferences.innerHTML = placeholder;
   if (playoffs) playoffs.innerHTML = placeholder;
   if (coeffs) coeffs.innerHTML = placeholder;
+}
+
+function createConferenceTable(label, rows) {
+  const table = document.createElement("table");
+  table.className = "mini-table";
+
+  const caption = document.createElement("caption");
+  caption.textContent = label;
+  table.appendChild(caption);
+
+  const thead = document.createElement("thead");
+  thead.innerHTML = "<tr><th>#</th><th>Team</th><th>Pts</th><th>SP Diff</th></tr>";
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  rows.forEach((row, idx) => {
+    const tr = document.createElement("tr");
+    const diff = row.spFor - row.spAgainst;
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${row.team.name}</td>
+      <td>${row.points}</td>
+      <td>${diff}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  return table;
+}
+
+function renderMCLResult(result) {
+  if (!result) return;
+
+  const seasonLabel = document.getElementById("mcl-season-label");
+  const championLabel = document.getElementById("mcl-champion-label");
+  const slotSummary = document.getElementById("mcl-slot-summary");
+  const conferences = document.getElementById("mcl-conferences");
+  const playoffs = document.getElementById("mcl-playoffs");
+  const coeffs = document.getElementById("mcl-coefficients");
+
+  if (seasonLabel) seasonLabel.textContent = `Season ${result.seasonNumber}`;
+  if (championLabel) championLabel.textContent = `Champion: ${result.grandFinal.champion.name}`;
+
+  if (slotSummary) {
+    slotSummary.innerHTML = "";
+    Object.entries(result.nextSeasonSlots).forEach(([region, slots]) => {
+      const pill = document.createElement("span");
+      pill.className = "pill subtle";
+      pill.textContent = `${formatRegion(region)}: ${slots} spots next season`;
+      slotSummary.appendChild(pill);
+    });
+  }
+
+  if (conferences) {
+    conferences.innerHTML = "";
+    conferences.appendChild(createConferenceTable("LED Conference", result.ledConference.table));
+    conferences.appendChild(createConferenceTable("Continental Conference", result.continentalConference.table));
+  }
+
+  if (playoffs) {
+    const ledTable = result.ledConference.table;
+    const continentalTable = result.continentalConference.table;
+
+    const wildcardBox = document.createElement("div");
+    wildcardBox.className = "bracket-box";
+    wildcardBox.innerHTML = `
+      <h4>Wildcards</h4>
+      <div class="bracket-line">${formatSeriesLine(result.wildcard.led.series, ledTable[1].team, ledTable[2].team)}</div>
+      <div class="bracket-line">${formatSeriesLine(result.wildcard.continental.series, continentalTable[1].team, continentalTable[2].team)}</div>
+    `;
+
+    const semifinalBox = document.createElement("div");
+    semifinalBox.className = "bracket-box";
+    semifinalBox.innerHTML = `
+      <h4>Semifinals</h4>
+      <div class="bracket-line">${formatSeriesLine(result.semifinals.semifinal1.series, ...result.semifinals.semifinal1.pairing)}</div>
+      <div class="bracket-line">${formatSeriesLine(result.semifinals.semifinal2.series, ...result.semifinals.semifinal2.pairing)}</div>
+    `;
+
+    const finalBox = document.createElement("div");
+    finalBox.className = "bracket-box";
+    finalBox.innerHTML = `
+      <h4>Grand Final</h4>
+      <div class="bracket-line">${formatSeriesLine(result.grandFinal.series, ...result.semifinals.finalists)}</div>
+    `;
+
+    playoffs.innerHTML = "";
+    playoffs.appendChild(wildcardBox);
+    playoffs.appendChild(semifinalBox);
+    playoffs.appendChild(finalBox);
+  }
+
+  if (coeffs) {
+    coeffs.innerHTML = "";
+    const table = document.createElement("table");
+    table.className = "mini-table";
+
+    const caption = document.createElement("caption");
+    caption.textContent = "Coefficient History";
+    table.appendChild(caption);
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = "<tr><th>Region</th><th>Recent Scores</th></tr>";
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    Object.entries(result.coefficientHistory).forEach(([region, history]) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${formatRegion(region)}</td>
+        <td>${(history || []).join(", ") || "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    coeffs.appendChild(table);
+  }
 }
 
 function initLeagueSelectors() {
@@ -375,6 +623,37 @@ function simulateMCLAndRender() {
   GLOBAL_MCL_LAST_RESULT = result;
   renderMCLResult(result);
   return result;
+}
+
+function simulateMCLDay() {
+  if (GLOBAL_MCL_SIM_STATE && GLOBAL_MCL_SIM_STATE.completed) {
+    appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: Major Continental League already completed.`]);
+    return;
+  }
+
+  const domesticOrdering = buildDomesticOrderingFromResults();
+  const result = simulateCurrentMCLSeason(domesticOrdering);
+  if (!result) return;
+
+  GLOBAL_MCL_LAST_RESULT = result;
+  GLOBAL_MCL_SIM_STATE = { completed: true, result };
+
+  renderMCLResult(result);
+
+  const ledLeader = result.ledConference.table[0];
+  const continentalLeader = result.continentalConference.table[0];
+
+  const mclLines = [
+    "=== Major Continental League ===",
+    `Season ${result.seasonNumber} Champion: ${result.grandFinal.champion.name}`,
+    `LED Conference winner: ${ledLeader.team.name} (${ledLeader.points} pts)` ,
+    `Continental Conference winner: ${continentalLeader.team.name} (${continentalLeader.points} pts)`,
+    formatSeriesLine(result.wildcard.led.series, result.ledConference.table[1].team, result.ledConference.table[2].team),
+    formatSeriesLine(result.wildcard.continental.series, result.continentalConference.table[1].team, result.continentalConference.table[2].team),
+    formatSeriesLine(result.grandFinal.series, result.semifinals.finalists[0], result.semifinals.finalists[1])
+  ];
+
+  appendToLeagueLog(mclLines);
 }
 
 function simulateMCLSeasonButtonHandler() {
