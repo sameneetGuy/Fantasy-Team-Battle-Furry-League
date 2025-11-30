@@ -11,33 +11,25 @@
     <header class="hero">
       <div>
         <h1>ARC-ARENA Manager</h1>
-        <p>Run test matches, simulate entire leagues, and view standings in one sleek panel.</p>
+        <p>Simulate domestic leagues and continental seasons, then dive into richly formatted logs.</p>
       </div>
       <div class="actions">
-        <button id="run-test-match" class="btn secondary">Run Test Match</button>
         <button id="advance-day" class="btn">Advance Day</button>
         <button id="run-leagues" class="btn secondary">Simulate Leagues</button>
-        <button id="run-mcl" class="btn secondary">Simulate MCL Season</button>
+        <button id="simulate-mcl-season" class="btn secondary">Simulate MCL Season</button>
       </div>
     </header>
 
     <main class="layout">
       <section class="card">
         <div class="section-header">
-          <h2>Test Match Log</h2>
-          <span class="small">Quickly check fighter balance</span>
-        </div>
-        <p class="muted">Run a head-to-head battle between the first two teams and inspect the play-by-play.</p>
-        <div id="match-log" class="log-box">(no matches run yet)</div>
-      </section>
-
-      <section class="card">
-        <div class="section-header">
           <h2>League Simulation Log</h2>
-          <span class="small">Now only match results</span>
+          <span class="small">Syntax-highlighted with collapsible regions</span>
         </div>
-        <p class="muted">Simulate every league and review each match outcome without table clutter.</p>
-        <div id="league-log" class="log-box">(no league simulations run yet)</div>
+        <p class="muted">Simulate every league and explore the full log with highlighting and foldable sections.</p>
+        <div id="league-log-viewer" class="code-viewer">
+          <div class="code-line muted">(no league simulations run yet)</div>
+        </div>
       </section>
 
       <section class="card" style="grid-column: span 2;">
