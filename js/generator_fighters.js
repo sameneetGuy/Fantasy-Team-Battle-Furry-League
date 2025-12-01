@@ -12,12 +12,23 @@ const RACE_MODS = {
   Mustelid: { attack: 0, defense: -1, speed: 1 }
 };
 
+const REGION_POWER_MOD = {
+  LEDpunkElite: 3,          // Elite “Champions League” region
+  CyberpunkUnderground: 0,  // Domestic regions start at 0
+  DieselpunkCold: 0,
+  SteampunkDesert: 0,
+  SolarpunkForest: 0
+};
+
 function buildFighter(fStub, region, ALL_ABILITIES) {
 
   // 1) BASE STATS: Role + Race
   const roleBase = ROLE_TEMPLATES[fStub.role];
   const raceMods = RACE_MODS[fStub.race] || { attack:0, defense:0, speed:0 };
-
+  
+  // Region-level power gap: LEDpunkElite gets a flat boost
+  const regionMod = REGION_POWER_MOD[region] || 0;
+  
   const attack  = Math.max(1, roleBase.attack  + raceMods.attack);
   const defense = Math.max(1, roleBase.defense + raceMods.defense);
   const speed   = Math.max(1, roleBase.speed   + raceMods.speed);

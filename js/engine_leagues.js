@@ -1,3 +1,7 @@
+// Tier-based domestic power gap:
+// index 0 = Tier 1 (strongest), index 1 = Tier 2, etc.
+const TIER_POWER_MODS = [2, 1, 0, -1];
+
 function buildRegionalLeagues(teams) {
   const byRegion = {};
 
@@ -30,6 +34,27 @@ function buildRegionalLeagues(teams) {
   }
 
   return regionLeagues;
+}
+
+// Apply tier-based stat bonuses/penalties to domestic teams
+function applyPowerGaps(regionLeagues) {
+  if (!regionLeagues) return;
+
+  Object.values(regionLeagues).forEach(tiers => {
+    tiers.forEach((teamList, tierIndex) => {
+      const mod = TIER_POWER_MODS[tierIndex] || 0;
+
+      (teamList || []).forEach(team => {
+        team.powerMod = mod; // store for debugging / future UI
+
+        (team.fighters || []).forEach(f => {
+          f.attack  = Math.max(1, f.attack  + mod);
+          f.defense = Math.max(1, f.defense + mod);
+          f.speed   = Math.max(1, f.speed   + mod);
+        });
+      });
+    });
+  });
 }
 
 function generateRoundRobinFixtures(teamList) {

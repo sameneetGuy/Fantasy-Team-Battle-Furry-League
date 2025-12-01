@@ -59,6 +59,198 @@
 	  "targetType": "aoe_self_allies",
 	  "buff": { "stat": "speed", "amount": 1, "duration": 1 },
 	  "description": "Inspire allies, increasing speed."
+	},
+	{
+	  "id": "body_block",
+	  "name": "Body Block",
+	  "role": "Tank",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "aoe_all_allies",
+	  "buff": {
+		"stat": "defense",
+		"amount": 1,
+		"duration": 1
+	  },
+	  "description": "Step in front of allies, giving your whole team a small defense boost."
+	},
+	{
+	  "id": "fortress_wall",
+	  "name": "Fortress Wall",
+	  "role": "Tank",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "self",
+	  "buff": {
+		"stat": "defense",
+		"amount": 3,
+		"duration": 2
+	  },
+	  "description": "Brace completely, greatly increasing your defense for the next two rounds."
+	},
+	{
+	  "id": "taunting_roar",
+	  "name": "Taunting Roar",
+	  "role": "Tank",
+	  "rangeType": "projectile",
+	  "rollType": "speed_vs_speed",
+	  "targetType": "aoe_all_enemies",
+	  "debuff": {
+		"stat": "attack",
+		"amount": -1,
+		"duration": 1
+	  },
+	  "description": "Roar at all enemies, rattling them and lowering their attack for one round."
+	},
+	{
+	  "id": "shove_back",
+	  "name": "Shove Back",
+	  "role": "Tank",
+	  "rangeType": "close",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "single",
+	  "tags": ["knockback"],
+	  "description": "Push an enemy out of position without dealing damage."
+	},
+	{
+	  "id": "quick_shot",
+	  "name": "Quick Shot",
+	  "role": "DPS",
+	  "rangeType": "projectile",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "single",
+	  "spOnHit": 1,
+	  "description": "A basic ranged attack with no special effects."
+	},
+	{
+	  "id": "finishing_blow",
+	  "name": "Finishing Blow",
+	  "role": "DPS",
+	  "rangeType": "projectile",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "single",
+	  "spOnHit": 2,
+	  "description": "Concentrate all power into one devastating hit, ideal for finishing weakened opponents."
+	},
+	{
+	  "id": "armor_sunder",
+	  "name": "Armor Sunder",
+	  "role": "DPS",
+	  "rangeType": "projectile",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "single",
+	  "spOnHit": 1,
+	  "debuff": {
+		"stat": "defense",
+		"amount": -1,
+		"duration": 1
+	  },
+	  "description": "Strike to weaken an enemy's guard, dealing damage and lowering their defense."
+	},
+	{
+	  "id": "suppressing_fire",
+	  "name": "Suppressing Fire",
+	  "role": "DPS",
+	  "rangeType": "projectile",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "aoe_2",
+	  "debuff": {
+		"stat": "attack",
+		"amount": -1,
+		"duration": 1
+	  },
+	  "description": "Lay down fire on two enemies, reducing their ability to hit back."
+	},
+	{
+	  "id": "piercing_volley",
+	  "name": "Piercing Volley",
+	  "role": "DPS",
+	  "rangeType": "projectile",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "aoe_all_enemies",
+	  "spOnHit": 1,
+	  "description": "Fire a deadly volley that threatens every enemy on the field."
+	},
+	{
+	  "id": "flanking_rush",
+	  "name": "Flanking Rush",
+	  "role": "DPS",
+	  "rangeType": "close",
+	  "rollType": "attack_vs_defense",
+	  "targetType": "single",
+	  "spOnHit": 1,
+	  "tags": ["knockback"],
+	  "description": "Dash in close to strike and shove the target out of position."
+	},
+	{
+	  "id": "barrier_field",
+	  "name": "Barrier Field",
+	  "role": "Support",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "aoe_self_allies",
+	  "buff": {
+		"stat": "defense",
+		"amount": 1,
+		"duration": 2
+	  },
+	  "description": "Project a protective field that slightly raises all allies' defense for two rounds."
+	},
+	{
+	  "id": "tempo_surge",
+	  "name": "Tempo Surge",
+	  "role": "Support",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "aoe_self_allies",
+	  "buff": {
+		"stat": "speed",
+		"amount": 2,
+		"duration": 1
+	  },
+	  "description": "Give the whole team a burst of speed for the next round."
+	},
+	{
+	  "id": "focused_mind",
+	  "name": "Focused Mind",
+	  "role": "Support",
+	  "rangeType": "self",
+	  "rollType": "none",
+	  "targetType": "aoe_self_allies",
+	  "buff": {
+		"stat": "attack",
+		"amount": 1,
+		"duration": 1
+	  },
+	  "description": "Sharpen everyone’s focus, slightly increasing allies' attack."
+	},
+	{
+	  "id": "slow_bolt",
+	  "name": "Slow Bolt",
+	  "role": "Support",
+	  "rangeType": "projectile",
+	  "rollType": "speed_vs_speed",
+	  "targetType": "single",
+	  "debuff": {
+		"stat": "speed",
+		"amount": -1,
+		"duration": 1
+	  },
+	  "description": "A hindering shot that slows a single enemy."
+	},
+	{
+	  "id": "hinder_step",
+	  "name": "Hinder Step",
+	  "role": "Support",
+	  "rangeType": "projectile",
+	  "rollType": "speed_vs_speed",
+	  "targetType": "aoe_2",
+	  "debuff": {
+		"stat": "speed",
+		"amount": -1,
+		"duration": 1
+	  },
+	  "description": "Disrupt the movement of two enemies, reducing their speed."
 	}
   ]
 }

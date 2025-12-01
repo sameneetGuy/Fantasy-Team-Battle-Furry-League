@@ -9,11 +9,14 @@ let GLOBAL_LEAGUE_SIM_STATE = null;
 let GLOBAL_MCL_SIM_STATE = null;
 let GLOBAL_CURRENT_DAY = 1;
 let GLOBAL_DAY_LOG_LINES = [];
+let GLOBAL_DOMESTIC_SEASON = 1;
+// stores league tables by season: { [seasonNumber]: leagueResultsObject }
+let GLOBAL_LEAGUE_SEASON_HISTORY = {};
 
-function buildDomesticOrderingFromResults() {
+function buildDomesticOrderingFromResultsObject(results) {
   const ordering = {};
 
-  Object.entries(GLOBAL_LEAGUE_RESULTS || {}).forEach(([region, tiers]) => {
+  Object.entries(results || {}).forEach(([region, tiers]) => {
     const orderedIds = [];
     (tiers || []).forEach(tier => {
       if (!tier || !tier.table) return;
@@ -23,6 +26,11 @@ function buildDomesticOrderingFromResults() {
   });
 
   return ordering;
+}
+
+// Convenience: keep the old helper name, but have it use GLOBAL_LEAGUE_RESULTS
+function buildDomesticOrderingFromResults() {
+  return buildDomesticOrderingFromResultsObject(GLOBAL_LEAGUE_RESULTS);
 }
 
 function formatSeriesLine(series, teamA, teamB) {
@@ -49,6 +57,10 @@ async function startNewGame() {
   GLOBAL_TEAMS = teams;
   GLOBAL_ELITE_TEAMS = eliteTeams;
   GLOBAL_LEAGUES = buildRegionalLeagues(teams);
+
+  // Apply domestic tier-based power gap AFTER leagues are built
+  applyPowerGaps(GLOBAL_LEAGUES);
+  
   GLOBAL_MCL_COEFFICIENTS = createEmptyCoefficientHistory();
   GLOBAL_MCL_SEASON = 1;
   GLOBAL_MCL_LAST_RESULT = null;
@@ -57,6 +69,11 @@ async function startNewGame() {
   GLOBAL_CURRENT_DAY = 1;
   GLOBAL_DAY_LOG_LINES = [];
   GLOBAL_LEAGUE_RESULTS = buildLeagueResultsFromState(GLOBAL_LEAGUE_SIM_STATE);
+  
+  // NEW: reset season counters + store Season 1’s “starting” results
+  GLOBAL_DOMESTIC_SEASON = 1;
+  GLOBAL_LEAGUE_SEASON_HISTORY = {};
+  GLOBAL_LEAGUE_SEASON_HISTORY[GLOBAL_DOMESTIC_SEASON] = GLOBAL_LEAGUE_RESULTS;
 
   renderLeagueLog([]);
 
@@ -294,15 +311,27 @@ function renderMCLResult(result) {
     table.appendChild(caption);
 
     const thead = document.createElement("thead");
-    thead.innerHTML = "<tr><th>Region</th><th>Recent Scores</th></tr>";
+    thead.innerHTML = "<tr><th>Region</th><th>Average (last 3)</th><th>Recent Scores</th></tr>";
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
     Object.entries(result.coefficientHistory).forEach(([region, history]) => {
+      const values = (history || []).map(v => v.toFixed(2));
+      const alt_values = history || [];
+      let display = "—";
+
+      if (alt_values.length > 0) {
+        const sum = alt_values.reduce((acc, v) => acc + v, 0);
+        const avg = sum / alt_values.length;
+        // Round to 2 decimal places, e.g. 12.17 instead of 12.1666...
+        display = avg.toFixed(2);
+      }
+      
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${formatRegion(region)}</td>
-        <td>${(history || []).join(", ") || "—"}</td>
+        <td>${display}</td>
+        <td>${values.join(", ") || "—"}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -481,28 +510,6 @@ function appendToLeagueLog(lines) {
   renderLeagueLog(GLOBAL_DAY_LOG_LINES);
 }
 
-function simulateCurrentMCLSeason(domesticStandings = null) {
-  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 || !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
-    console.warn("MCL cannot run until teams are loaded.");
-    return null;
-  }
-
-  const result = simulateMCLSeason({
-    seasonNumber: GLOBAL_MCL_SEASON,
-    teams: GLOBAL_TEAMS,
-    eliteTeams: GLOBAL_ELITE_TEAMS,
-    coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
-    domesticStandings
-  });
-
-  GLOBAL_MCL_COEFFICIENTS = result.coefficientHistory;
-  GLOBAL_MCL_SEASON += 1;
-
-  console.log(`MCL Season ${result.seasonNumber} complete. Champion: ${result.grandFinal.champion.name}`);
-  console.log("Next season slots:", result.nextSeasonSlots);
-  return result;
-}
-
 function formatRegion(region) {
   return region.replace(/([a-z])([A-Z])/g, "$1 $2");
 }
@@ -616,54 +623,39 @@ function renderLeagueLog(lines) {
   viewer.appendChild(fragment);
 }
 
-function simulateMCLAndRender() {
-  const domesticOrdering = buildDomesticOrderingFromResults();
-  const result = simulateCurrentMCLSeason(domesticOrdering);
-  if (!result) return null;
-  GLOBAL_MCL_LAST_RESULT = result;
-  renderMCLResult(result);
-  return result;
-}
-
-function simulateMCLDay() {
-  if (GLOBAL_MCL_SIM_STATE && GLOBAL_MCL_SIM_STATE.completed) {
-    appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: Major Continental League already completed.`]);
-    return;
+function simulateCurrentMCLSeasonWithReset() {
+  // Safety check: do we have teams and elite teams?
+  if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 ||
+      !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
+    appendToLeagueLog(["MCL cannot run until teams are loaded."]);
+    console.warn("MCL cannot run until teams are loaded.");
+    return null;
   }
 
-  const domesticOrdering = buildDomesticOrderingFromResults();
-  const result = simulateCurrentMCLSeason(domesticOrdering);
-  if (!result) return;
+  // Build ordering from the league results of the *previous* domestic season
+  // – i.e., MCL Season N uses Domestic Season N’s standings
+  const previousLeagueResults = GLOBAL_LEAGUE_SEASON_HISTORY[GLOBAL_MCL_SEASON] || GLOBAL_LEAGUE_RESULTS;
+  const domesticOrdering = buildDomesticOrderingFromResultsObject(previousLeagueResults);
 
+  // Run one full MCL season
+  const result = simulateMCLSeason({
+    seasonNumber: GLOBAL_MCL_SEASON,
+    teams: GLOBAL_TEAMS,
+    eliteTeams: GLOBAL_ELITE_TEAMS,
+    coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
+    domesticStandings: domesticOrdering
+  });
+
+  // Advance global MCL state
+  GLOBAL_MCL_COEFFICIENTS = result.coefficientHistory;
+  GLOBAL_MCL_SEASON += 1;
   GLOBAL_MCL_LAST_RESULT = result;
   GLOBAL_MCL_SIM_STATE = { completed: true, result };
 
+  // Render the nice MCL UI
   renderMCLResult(result);
 
-  const ledLeader = result.ledConference.table[0];
-  const continentalLeader = result.continentalConference.table[0];
-
-  const mclLines = [
-    "=== Major Continental League ===",
-    `Season ${result.seasonNumber} Champion: ${result.grandFinal.champion.name}`,
-    `LED Conference winner: ${ledLeader.team.name} (${ledLeader.points} pts)` ,
-    `Continental Conference winner: ${continentalLeader.team.name} (${continentalLeader.points} pts)`,
-    formatSeriesLine(result.wildcard.led.series, result.ledConference.table[1].team, result.ledConference.table[2].team),
-    formatSeriesLine(result.wildcard.continental.series, result.continentalConference.table[1].team, result.continentalConference.table[2].team),
-    formatSeriesLine(result.grandFinal.series, result.semifinals.finalists[0], result.semifinals.finalists[1])
-  ];
-
-  appendToLeagueLog(mclLines);
-}
-
-function simulateMCLSeasonButtonHandler() {
-  GLOBAL_MCL_SIM_STATE = { completed: false };
-
-  const result = simulateMCLAndRender();
-  if (!result) return;
-
-  GLOBAL_MCL_SIM_STATE = { completed: true, result };
-
+  // Prepare log summary lines
   const ledLeader = result.ledConference.table[0];
   const continentalLeader = result.continentalConference.table[0];
 
@@ -672,12 +664,49 @@ function simulateMCLSeasonButtonHandler() {
     `Season ${result.seasonNumber} Champion: ${result.grandFinal.champion.name}`,
     `LED Conference winner: ${ledLeader.team.name} (${ledLeader.points} pts)`,
     `Continental Conference winner: ${continentalLeader.team.name} (${continentalLeader.points} pts)`,
-    formatSeriesLine(result.wildcard.led.series, result.ledConference.table[1].team, result.ledConference.table[2].team),
-    formatSeriesLine(result.wildcard.continental.series, result.continentalConference.table[1].team, result.continentalConference.table[2].team),
-    formatSeriesLine(result.grandFinal.series, result.semifinals.finalists[0], result.semifinals.finalists[1])
+    formatSeriesLine(result.wildcard.led.series,
+                     result.ledConference.table[1].team,
+                     result.ledConference.table[2].team),
+    formatSeriesLine(result.wildcard.continental.series,
+                     result.continentalConference.table[1].team,
+                     result.continentalConference.table[2].team),
+    formatSeriesLine(result.grandFinal.series,
+                     result.semifinals.finalists[0],
+                     result.semifinals.finalists[1])
   ];
 
   appendToLeagueLog(mclLines);
+  return result;
+}
+
+// MAIN “simulate MCL season” button (hero button)
+function simulateMCLSeasonButtonHandler() {
+  // Always reset the per-season MCL state when the button is pressed
+  GLOBAL_MCL_SIM_STATE = { completed: false };
+  return simulateCurrentMCLSeasonWithReset();
+}
+
+// Secondary button inside the MCL card should use the same flow
+function simulateMCLAndRender() {
+  return simulateMCLSeasonButtonHandler();
+}
+
+// Day-by-day: just call the same helper once when it's MCL's turn
+function simulateMCLDay() {
+  if (GLOBAL_MCL_SIM_STATE && GLOBAL_MCL_SIM_STATE.completed) {
+    appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: Major Continental League already completed.`]);
+    return;
+  }
+
+  // Initialize state if needed
+  if (!GLOBAL_MCL_SIM_STATE) {
+    GLOBAL_MCL_SIM_STATE = { completed: false };
+  }
+
+  const result = simulateCurrentMCLSeasonWithReset();
+  if (!result) return;
+
+  // simulateCurrentMCLSeasonWithReset already sets completed + logs
 }
 
 function renderCurrentLeagueTable() {
@@ -763,7 +792,8 @@ function simulateAllLeagues() {
 
     results[region] = [];
 
-    lines.push(`\nRegion: ${region}`);
+    lines.push("");
+    lines.push(`Region: ${formatRegion(region)}`);
 
     tiers.forEach((tierTeams, tierIndex) => {
       if (!tierTeams || tierTeams.length < 2) {
@@ -827,11 +857,18 @@ function advanceDay() {
 
   const runLeague = shouldRunLeagueDay(leagueReady, mclReady);
 
-  if (runLeague) {
+    if (runLeague) {
+    const wasCompletedBefore = GLOBAL_LEAGUE_SIM_STATE.completed;
+
     const { lines, anyMatches } = runNextLeagueDay(GLOBAL_LEAGUE_SIM_STATE);
     GLOBAL_LEAGUE_RESULTS = buildLeagueResultsFromState(GLOBAL_LEAGUE_SIM_STATE);
     renderCurrentLeagueTable();
     appendToLeagueLog(lines);
+
+    // NEW: if the leagues just finished on this day, store this season’s tables
+    if (!wasCompletedBefore && GLOBAL_LEAGUE_SIM_STATE.completed) {
+      GLOBAL_LEAGUE_SEASON_HISTORY[GLOBAL_DOMESTIC_SEASON] = GLOBAL_LEAGUE_RESULTS;
+    }
 
     if (!anyMatches && !mclReady) {
       appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: Domestic leagues already complete.`]);

@@ -22,7 +22,14 @@ function createEmptyCoefficientHistory() {
 }
 
 function cloneTournamentTeam(team) {
-  const clone = JSON.parse(JSON.stringify(team));
+  // Drop the circular "team" references on fighters while cloning
+  const clone = JSON.parse(JSON.stringify(team, (key, value) => {
+    if (key === "team") {
+      return undefined; // omit this property from the cloned structure
+    }
+    return value;
+  }));
+
   resetTeamForTournament(clone);
   return clone;
 }
