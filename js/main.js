@@ -341,6 +341,50 @@ function renderMCLResult(result) {
   }
 }
 
+function renderMCLInProgress(state) {
+  if (!state) return;
+
+  const seasonLabel   = document.getElementById("mcl-season-label");
+  const championLabel = document.getElementById("mcl-champion-label");
+  const slotSummary   = document.getElementById("mcl-slot-summary");
+  const conferences   = document.getElementById("mcl-conferences");
+
+  // Basic header info
+  if (seasonLabel) {
+    seasonLabel.textContent = `Season ${state.seasonNumber} (in progress)`;
+  }
+  if (championLabel) {
+    championLabel.textContent = "Champion: —";
+  }
+
+  // Show how many spots each region has *this* season
+  if (slotSummary) {
+    slotSummary.innerHTML = "";
+    if (state.slotsUsed) {
+      Object.entries(state.slotsUsed).forEach(([region, slots]) => {
+        const pill = document.createElement("span");
+        pill.className = "pill subtle";
+        pill.textContent = `${formatRegion(region)}: ${slots} spots this season`;
+        slotSummary.appendChild(pill);
+      });
+    }
+  }
+
+  // Live conference tables using the current tableObj maps
+  if (conferences) {
+    conferences.innerHTML = "";
+
+    const ledRows  = sortConferenceTable(state.led.tableObj);
+    const contRows = sortConferenceTable(state.continental.tableObj);
+
+    conferences.appendChild(createConferenceTable("LED Conference", ledRows));
+    conferences.appendChild(createConferenceTable("Continental Conference", contRows));
+  }
+
+  // We leave playoffs + coefficients as-is for now; they’ll be filled
+  // once the season fully completes by renderMCLResult(result).
+}
+
 function initLeagueSelectors() {
   const regionSelect = document.getElementById("league-region");
   const tierSelect = document.getElementById("league-tier");
@@ -681,8 +725,8 @@ function simulateCurrentMCLSeasonWithReset() {
 
 // MAIN “simulate MCL season” button (hero button)
 function simulateMCLSeasonButtonHandler() {
-  // Always reset the per-season MCL state when the button is pressed
-  GLOBAL_MCL_SIM_STATE = { completed: false };
+  // Full-season button: ignore any in-progress state and run a fresh full MCL season
+  GLOBAL_MCL_SIM_STATE = null;
   return simulateCurrentMCLSeasonWithReset();
 }
 
@@ -691,22 +735,52 @@ function simulateMCLAndRender() {
   return simulateMCLSeasonButtonHandler();
 }
 
-// Day-by-day: just call the same helper once when it's MCL's turn
+// Day-by-day: advance ONE MCL "step" (round / stage) per call
 function simulateMCLDay() {
+  // If a full season was already done
   if (GLOBAL_MCL_SIM_STATE && GLOBAL_MCL_SIM_STATE.completed) {
     appendToLeagueLog([`Day ${GLOBAL_CURRENT_DAY}: Major Continental League already completed.`]);
     return;
   }
 
-  // Initialize state if needed
-  if (!GLOBAL_MCL_SIM_STATE) {
-    GLOBAL_MCL_SIM_STATE = { completed: false };
+  // Initialize state on the first MCL day (or when we just have the stub { completed: false })
+  if (!GLOBAL_MCL_SIM_STATE || !GLOBAL_MCL_SIM_STATE.led) {
+    if (!GLOBAL_TEAMS || GLOBAL_TEAMS.length === 0 ||
+        !GLOBAL_ELITE_TEAMS || GLOBAL_ELITE_TEAMS.length === 0) {
+      appendToLeagueLog(["MCL cannot run until teams are loaded."]);
+      console.warn("MCL cannot run until teams are loaded.");
+      return;
+    }
+
+    const domesticOrdering = buildDomesticOrderingFromResults();
+
+    GLOBAL_MCL_SIM_STATE = createMCLSimulationState({
+      seasonNumber: GLOBAL_MCL_SEASON,
+      teams: GLOBAL_TEAMS,
+      eliteTeams: GLOBAL_ELITE_TEAMS,
+      coefficientHistory: GLOBAL_MCL_COEFFICIENTS,
+      domesticStandings: domesticOrdering
+    });
   }
 
-  const result = simulateCurrentMCLSeasonWithReset();
-  if (!result) return;
+  const { lines, completed, result } = runNextMCLStep(GLOBAL_MCL_SIM_STATE);
 
-  // simulateCurrentMCLSeasonWithReset already sets completed + logs
+  const header = `Day ${GLOBAL_CURRENT_DAY}: Major Continental League`;
+  appendToLeagueLog([header, ...lines]);
+
+  if (completed && result) {
+    // Finalize globals
+    GLOBAL_MCL_COEFFICIENTS = result.coefficientHistory;
+    GLOBAL_MCL_SEASON += 1;
+    GLOBAL_MCL_LAST_RESULT = result;
+    GLOBAL_MCL_SIM_STATE.completed = true;
+
+    // Render full final MCL UI (conferences, playoffs, coefficients)
+    renderMCLResult(result);
+  } else {
+    // While season is still running, render live standings
+    renderMCLInProgress(GLOBAL_MCL_SIM_STATE);
+  }
 }
 
 function renderCurrentLeagueTable() {

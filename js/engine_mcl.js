@@ -343,3 +343,374 @@ function simulateMCLSeason({
     nextSeasonSlots
   };
 }
+
+// ---------------------------------------
+// MCL DAY-BY-DAY STATE + STEP SIMULATION
+// ---------------------------------------
+
+/**
+ * Build a state object that lets us advance the MCL in small steps
+ * (conference round by conference round, then wildcards, semifinals, final).
+ */
+function createMCLSimulationState({
+  seasonNumber = 1,
+  teams = [],
+  eliteTeams = [],
+  coefficientHistory = createEmptyCoefficientHistory(),
+  domesticStandings = null
+}) {
+  // Compute slots + qualifiers exactly like the full-season helper
+  const slots = computeMCLSlotsForSeason(coefficientHistory, seasonNumber);
+  const qualifiers = pickQualifiersByRegion(teams, slots, domesticStandings);
+
+  // Clone tournament teams so they don't share circular refs with league squads
+  const ledConferenceTeams = eliteTeams.map(cloneTournamentTeam);
+  const continentalTeams = qualifiers.map(cloneTournamentTeam);
+
+  const regionPoints = initializeRegionPoints();
+  const teamCounts = { ...initializeRegionPoints() };
+  ledConferenceTeams.forEach(t => { teamCounts[t.region] = (teamCounts[t.region] || 0) + 1; });
+  continentalTeams.forEach(t => { teamCounts[t.region] = (teamCounts[t.region] || 0) + 1; });
+
+  // Round-robin fixtures + tables
+  const ledFixtures = generateRoundRobinFixtures(ledConferenceTeams);
+  const contFixtures = generateRoundRobinFixtures(continentalTeams);
+
+  const ledTableObj = initializeConferenceTable(ledConferenceTeams);
+  const contTableObj = initializeConferenceTable(continentalTeams);
+
+  return {
+    seasonNumber,
+    slotsUsed: slots,
+    coefficientHistoryIn: coefficientHistory,
+    led: {
+      teams: ledConferenceTeams,
+      fixtures: ledFixtures,
+      tableObj: ledTableObj,
+      tableSorted: [],
+      roundIndex: 0,
+      completed: ledFixtures.length === 0
+    },
+    continental: {
+      teams: continentalTeams,
+      fixtures: contFixtures,
+      tableObj: contTableObj,
+      tableSorted: [],
+      roundIndex: 0,
+      completed: contFixtures.length === 0
+    },
+    regionPoints,
+    teamCounts,
+    bonusesAwarded: false,            // top 3 conference bonuses
+    semifinalistsAwarded: false,      // +2 for 4 semifinalists
+    wildcards: {
+      stage: 0,                       // 0 = none, 1 = LED done, 2 = both done, 3 = finished
+      ledSeries: null,
+      contSeries: null,
+      ledWinner: null,
+      contWinner: null
+    },
+    semifinals: {
+      stage: 0,                       // 0 = none, 1 = semi1 done, 2 = semi2 done
+      semifinal1: null,
+      semifinal2: null,
+      finalist1: null,
+      finalist2: null
+    },
+    final: {
+      played: false,
+      series: null,
+      champion: null
+    },
+    completed: false,
+    result: null
+  };
+}
+
+/**
+ * Advance the current MCL simulation state by ONE logical step.
+ * Returns { lines, completed, result? }.
+ */
+function runNextMCLStep(state) {
+  if (!state) {
+    return { lines: ["MCL state not initialized."], completed: true, result: null };
+  }
+
+  const lines = [];
+
+  if (state.completed) {
+    lines.push("MCL season already completed.");
+    return { lines, completed: true, result: state.result };
+  }
+
+  // -----------------------------
+  // 1) LED CONFERENCE ROUND-ROBIN
+  // -----------------------------
+  if (!state.led.completed) {
+    const roundIdx = state.led.roundIndex;
+    const fixtures = state.led.fixtures;
+
+    if (!fixtures || fixtures.length === 0) {
+      state.led.completed = true;
+    } else if (roundIdx < fixtures.length) {
+      lines.push("=== MCL LED Conference ===");
+      lines.push(`Round ${roundIdx + 1}`);
+
+      const matches = fixtures[roundIdx] || [];
+      matches.forEach(([teamA, teamB]) => {
+        const result = playBo2Match(teamA, teamB);
+        recordConferenceResult(result, teamA, teamB, state.led.tableObj, state.regionPoints);
+
+        const desc =
+          result.winner === "D"
+            ? `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (Draw)`
+            : `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (${result.winner === "A" ? teamA.name : teamB.name} win)`;
+        lines.push(`  ${desc}`);
+      });
+
+      state.led.teams.forEach(team => recoverFatigueBetweenMatches(team));
+
+      state.led.roundIndex += 1;
+      if (state.led.roundIndex >= fixtures.length) {
+        state.led.completed = true;
+        state.led.tableSorted = sortConferenceTable(state.led.tableObj);
+        const leader = state.led.tableSorted[0];
+        if (leader) {
+          lines.push(`LED Conference complete. Top team: ${leader.team.name} (${leader.points} pts).`);
+        }
+      }
+
+      return { lines, completed: false, result: null };
+    } else {
+      state.led.completed = true;
+    }
+  }
+
+  // --------------------------------
+  // 2) CONTINENTAL CONFERENCE ROUNDS
+  // --------------------------------
+  if (!state.continental.completed) {
+    const roundIdx = state.continental.roundIndex;
+    const fixtures = state.continental.fixtures;
+
+    if (!fixtures || fixtures.length === 0) {
+      state.continental.completed = true;
+    } else if (roundIdx < fixtures.length) {
+      lines.push("=== MCL Continental Conference ===");
+      lines.push(`Round ${roundIdx + 1}`);
+
+      const matches = fixtures[roundIdx] || [];
+      matches.forEach(([teamA, teamB]) => {
+        const result = playBo2Match(teamA, teamB);
+        recordConferenceResult(result, teamA, teamB, state.continental.tableObj, state.regionPoints);
+
+        const desc =
+          result.winner === "D"
+            ? `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (Draw)`
+            : `${teamA.name} ${result.winsA}-${result.winsB} ${teamB.name} (${result.winner === "A" ? teamA.name : teamB.name} win)`;
+        lines.push(`  ${desc}`);
+      });
+
+      state.continental.teams.forEach(team => recoverFatigueBetweenMatches(team));
+
+      state.continental.roundIndex += 1;
+      if (state.continental.roundIndex >= fixtures.length) {
+        state.continental.completed = true;
+        state.continental.tableSorted = sortConferenceTable(state.continental.tableObj);
+        const leader = state.continental.tableSorted[0];
+        if (leader) {
+          lines.push(`Continental Conference complete. Top team: ${leader.team.name} (${leader.points} pts).`);
+        }
+      }
+
+      return { lines, completed: false, result: null };
+    } else {
+      state.continental.completed = true;
+    }
+  }
+
+  // At this point both conferences are complete.
+  // Ensure sorted tables exist.
+  if (!state.led.tableSorted || state.led.tableSorted.length === 0) {
+    state.led.tableSorted = sortConferenceTable(state.led.tableObj);
+  }
+  if (!state.continental.tableSorted || state.continental.tableSorted.length === 0) {
+    state.continental.tableSorted = sortConferenceTable(state.continental.tableObj);
+  }
+
+  const ledTable = state.led.tableSorted;
+  const contTable = state.continental.tableSorted;
+
+  // ---------------------------------------
+  // 3) AWARD +1 BONUS FOR TOP 3 IN EACH
+  // ---------------------------------------
+  if (!state.bonusesAwarded) {
+    awardBonusForTopThree(ledTable, state.regionPoints);
+    awardBonusForTopThree(contTable, state.regionPoints);
+    state.bonusesAwarded = true;
+    lines.push("Awarded regional bonuses for top 3 clubs in each conference.");
+    return { lines, completed: false, result: null };
+  }
+
+  // -----------------
+  // 4) WILDCARD STAGE
+  // -----------------
+  const w = state.wildcards;
+
+  if (w.stage === 0) {
+    // LED Wildcard: 2nd vs 3rd
+    lines.push("=== MCL Wildcards ===");
+
+    const led2 = ledTable[1].team;
+    const led3 = ledTable[2].team;
+    const series = playBo3Series(led2, led3);
+    awardMatchOutcomePoints(series, led2, led3, state.regionPoints);
+
+    const winner = series.winner === "A" ? led2 : led3;
+    w.ledSeries = series;
+    w.ledWinner = winner;
+    w.stage = 1;
+
+    lines.push(`${led2.name} ${series.winsA}-${series.winsB} ${led3.name} (${winner.name} wins)`);
+    return { lines, completed: false, result: null };
+  }
+
+  if (w.stage === 1) {
+    // Continental Wildcard: 2nd vs 3rd
+    lines.push("=== MCL Wildcards ===");
+
+    const cont2 = contTable[1].team;
+    const cont3 = contTable[2].team;
+    const series = playBo3Series(cont2, cont3);
+    awardMatchOutcomePoints(series, cont2, cont3, state.regionPoints);
+
+    const winner = series.winner === "A" ? cont2 : cont3;
+    w.contSeries = series;
+    w.contWinner = winner;
+    w.stage = 2;
+
+    lines.push(`${cont2.name} ${series.winsA}-${series.winsB} ${cont3.name} (${winner.name} wins)`);
+    return { lines, completed: false, result: null };
+  }
+
+  if (w.stage < 3) {
+    w.stage = 3;
+  }
+
+  // ---------------
+  // 5) SEMIFINALS
+  // ---------------
+  const s = state.semifinals;
+
+  const ledChampion = ledTable[0].team;
+  const contChampion = contTable[0].team;
+  const ledWildcardWinner = w.ledWinner;
+  const contWildcardWinner = w.contWinner;
+
+  // +2 for reaching the semifinals (all 4 teams), once
+  if (!state.semifinalistsAwarded) {
+    [ledChampion, contChampion, ledWildcardWinner, contWildcardWinner].forEach(team => {
+      if (team) state.regionPoints[team.region] += 2;
+    });
+    state.semifinalistsAwarded = true;
+  }
+
+  if (s.stage === 0) {
+    // Semifinal 1: LED champion vs Continental wildcard winner
+    lines.push("=== MCL Semifinals ===");
+
+    const series = playBo3Series(ledChampion, contWildcardWinner);
+    awardMatchOutcomePoints(series, ledChampion, contWildcardWinner, state.regionPoints);
+
+    s.semifinal1 = { series, pairing: [ledChampion, contWildcardWinner] };
+    const semi1Winner = series.winner === "A" ? ledChampion : contWildcardWinner;
+    s.finalist1 = semi1Winner;
+    s.stage = 1;
+
+    // +3 bonus for making the final
+    state.regionPoints[semi1Winner.region] += 3;
+
+    lines.push(`${ledChampion.name} ${series.winsA}-${series.winsB} ${contWildcardWinner.name} (${semi1Winner.name} wins)`);
+    return { lines, completed: false, result: null };
+  }
+
+  if (s.stage === 1) {
+    // Semifinal 2: Continental champion vs LED wildcard winner
+    lines.push("=== MCL Semifinals ===");
+
+    const series = playBo3Series(contChampion, ledWildcardWinner);
+    awardMatchOutcomePoints(series, contChampion, ledWildcardWinner, state.regionPoints);
+
+    s.semifinal2 = { series, pairing: [contChampion, ledWildcardWinner] };
+    const semi2Winner = series.winner === "A" ? contChampion : ledWildcardWinner;
+    s.finalist2 = semi2Winner;
+    s.stage = 2;
+
+    // +3 bonus for making the final
+    state.regionPoints[semi2Winner.region] += 3;
+
+    lines.push(`${contChampion.name} ${series.winsA}-${series.winsB} ${ledWildcardWinner.name} (${semi2Winner.name} wins)`);
+    return { lines, completed: false, result: null };
+  }
+
+  // -----------------
+  // 6) GRAND FINAL
+  // -----------------
+  const f = state.final;
+
+  if (!f.played) {
+    lines.push("=== MCL Grand Final ===");
+
+    const finalist1 = s.finalist1;
+    const finalist2 = s.finalist2;
+
+    const series = playBo3Series(finalist1, finalist2);
+    awardMatchOutcomePoints(series, finalist1, finalist2, state.regionPoints);
+
+    const champion = series.winner === "A" ? finalist1 : finalist2;
+    // Champion bonus
+    state.regionPoints[champion.region] += 5;
+
+    f.series = series;
+    f.champion = champion;
+    f.played = true;
+
+    // Season scoring + coefficient history
+    const seasonalScores = calculateSeasonalScores(state.regionPoints, state.teamCounts);
+    const updatedHistory = updateCoefficientHistory(state.coefficientHistoryIn, seasonalScores);
+    const nextSeasonSlots = computeMCLSlotsForSeason(updatedHistory, state.seasonNumber + 1);
+
+    const fullResult = {
+      seasonNumber: state.seasonNumber,
+      slotsUsed: state.slotsUsed,
+      ledConference: { table: ledTable, log: [] },
+      continentalConference: { table: contTable, log: [] },
+      wildcard: {
+        led: { series: state.wildcards.ledSeries, winner: state.wildcards.ledWinner },
+        continental: { series: state.wildcards.contSeries, winner: state.wildcards.contWinner }
+      },
+      semifinals: {
+        semifinal1: state.semifinals.semifinal1,
+        semifinal2: state.semifinals.semifinal2,
+        finalists: [state.semifinals.finalist1, state.semifinals.finalist2]
+      },
+      grandFinal: { series: state.final.series, champion },
+      regionPoints: state.regionPoints,
+      seasonalScores,
+      coefficientHistory: updatedHistory,
+      nextSeasonSlots
+    };
+
+    state.completed = true;
+    state.result = fullResult;
+
+    lines.push(`${finalist1.name} ${series.winsA}-${series.winsB} ${finalist2.name} (${champion.name} wins)`);
+    lines.push(`Champion: ${champion.name}.`);
+
+    return { lines, completed: true, result: fullResult };
+  }
+
+  // Safety fallback
+  state.completed = true;
+  return { lines, completed: true, result: state.result };
+}
